@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 
 // Load .env.local
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
