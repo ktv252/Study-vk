@@ -1,15 +1,16 @@
 // utils/auth.ts
 import { v4 as uuidv4 } from "uuid";
+import { PW_CONFIG } from "@/utils/pw-config";
 
 export function getHeaders(token: string) {
   return {
-    accept: "application/json, text/plain, */*",
+    accept: `${PW_CONFIG.accept}, text/plain, */*`,
     "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,hi;q=0.7,zh-CN;q=0.6,zh;q=0.5",
     Authorization: `Bearer ${token.trim()}`,
-    "client-id": "5eb393ee95fab7468a79d189",
+    "client-id": PW_CONFIG.organizationId,
     "client-type": "WEB",
     "client-version": "2.1.1",
-    "content-type": "application/json",
+    "content-type": PW_CONFIG.contentType,
     origin: "https://study-mf.pw.live",
     referer: "https://study-mf.pw.live/",
     priority: "u=1, i",
@@ -52,10 +53,10 @@ export function getVideoHeaders(token: string, randomId: string) {
       },
     }),
     authorization: `Bearer ${token}`,
-    "client-id": "5eb393ee95fab7468a79d189",
+    "client-id": PW_CONFIG.organizationId,
     "client-type": "WEB",
     "client-version": "200",
-    "content-type": "application/json",
+    "content-type": PW_CONFIG.contentType,
     devicememory: "8192",
     devicestreamingtechnology: JSON.stringify({
       dash: {
@@ -80,11 +81,11 @@ export function getVideoHeaders(token: string, randomId: string) {
       videoQuality: "720p (HD)",
     }),
     networktype: "4g",
-    origin: "https://www.pw.live",
+    origin: PW_CONFIG.referer.replace(/\/$/, ""),
     priority: "u=1, i",
     randomid: randomId,
 
-    referer: "https://www.pw.live/",
+    referer: PW_CONFIG.referer,
     screenresolution: "1366 x 768",
     "sec-ch-ua": '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
     "sec-ch-ua-mobile": "?0",

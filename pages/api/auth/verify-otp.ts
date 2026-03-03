@@ -6,13 +6,13 @@ import Batch from "@/models/Batch";
 import { v4 as uuidv4 } from "uuid";
 import jwt from "jsonwebtoken";
 import ServerConfig from "@/models/ServerConfig"; // at the top if not already imported
+import { PW_CONFIG, requirePwClientSecret } from "@/utils/pw-config";
 
 import crypto from "crypto";
 
 // Telegram
 const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN!;
 const TELEGRAM_CHANNEL_ID = process.env.LOG_CHANNEL_ID!;
-const BASE_URL = process.env.PW_API;
 async function sendTelegramLog(message: string) {
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -105,14 +105,14 @@ export default async function handler(
       }
     }
 
-    const response = await fetch(`${BASE_URL}/v3/oauth/token`, {
+    const response = await fetch(`${PW_CONFIG.baseUrl}/v3/oauth/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Randomid: randomId,
-        Referer: "https://www.pw.live/",
-        Origin: "https://www.pw.live/",
-        "client-id": "5eb393ee95fab7468a79d189",
+        Referer: PW_CONFIG.referer,
+        Origin: PW_CONFIG.referer.replace(/\/$/, ""),
+        "client-id": PW_CONFIG.organizationId,
         "client-type": "WEB",
         "client-version": "2.1.1",
         origin: "https://study-mf.pw.live",
@@ -127,12 +127,12 @@ export default async function handler(
       body: JSON.stringify({
         username: phoneNumber,
         otp: otp,
-        client_id: "system-admin",
-        client_secret: "KjPXuAVfC5xbmgreETNMaL7z",
-        grant_type: "password",
-        organizationId: "5eb393ee95fab7468a79d189",
-        latitude: 0,
-        longitude: 0,
+        client_id: PW_CONFIG.clientId,
+        client_secret: requirePwClientSecret(),
+        grant_type: PW_CONFIG.grantType,
+        organizationId: PW_CONFIG.organizationId,
+        latitude: PW_CONFIG.latitude,
+        longitude: PW_CONFIG.longitude,
       }),
     });
 
@@ -182,13 +182,13 @@ export default async function handler(
     async function fetchPurchasedBatches(accessToken: string) {
       const randomId = uuidv4();
       const response = await fetch(
-        `${BASE_URL}/batch-service/v1/batches/purchased-batches?page=1&type=ALL&amount=ALL`,
+        `${PW_CONFIG.baseUrl}/batch-service/v1/batches/purchased-batches?page=1&type=ALL&amount=ALL`,
         {
           method: "GET",
           headers: {
             accept: "application/json, text/plain, */*",
             authorization: `Bearer ${accessToken}`,
-            "client-id": "5eb393ee95fab7468a79d189",
+            "client-id": PW_CONFIG.organizationId,
             "client-type": "WEB",
             "client-version": "1.1.1",
             randomid: randomId,

@@ -3,12 +3,14 @@ import dbConnect from "@/lib/mongodb";
 import Batch from "@/models/Batch";
 import User from "@/models/User";
 import { v4 as uuidv4 } from "uuid";
+import { PW_CONFIG } from "@/utils/pw-config";
 
 const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN;
 const TELEGRAM_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
 async function sendTelegramLog(message: string) {
   try {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHANNEL_ID) return;
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     await fetch(url, {
       method: "POST",
@@ -64,7 +66,7 @@ export default async function handler(
 
       try {
         const response = await fetch(
-          "https://api.penpencil.co/v3/oauth/refresh-token",
+          `${PW_CONFIG.baseUrl}/v3/oauth/refresh-token`,
           {
             method: "POST",
             headers: {
@@ -73,7 +75,7 @@ export default async function handler(
             },
             body: JSON.stringify({
               refresh_token: refreshToken,
-              client_id: "system-admin",
+              client_id: PW_CONFIG.clientId,
             }),
           }
         );

@@ -3,18 +3,15 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import ServerConfig from "@/models/ServerConfig";
 import { getHeaders } from "@/utils/auth";
-
-import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
-import crypto from "crypto";
+import { PW_CONFIG } from "@/utils/pw-config";
 
 type Data = { success: boolean; message: string };
 
-const TELEGRAM_BOT_TOKEN = "8124407694:AAFHNHL5NOWvkwqeYNp5MmwLVshumBjU07o";
-const TELEGRAM_CHANNEL_ID = "-1002959186885";
-const BASE_URL = process.env.PW_API;
+const TELEGRAM_BOT_TOKEN = process.env.BOT_TOKEN;
+const TELEGRAM_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 async function sendTelegramLog(message: string) {
   try {
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHANNEL_ID) return;
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     await fetch(url, {
       method: "POST",
@@ -89,14 +86,14 @@ export default async function handler(
 
     // Send OTP request to PenPencil
     const response = await fetch(
-      "https://api.penpencil.co/v1/users/get-otp?smsType=0&fallback=true",
+      `${PW_CONFIG.baseUrl}/v1/users/get-otp?smsType=0&fallback=true`,
       {
         method: "POST",
         headers: getHeaders(""),
         body: JSON.stringify({
           username: phoneNumber,
           countryCode: "+91",
-          organizationId: "5eb393ee95fab7468a79d189",
+          organizationId: PW_CONFIG.organizationId,
         }),
       }
     );

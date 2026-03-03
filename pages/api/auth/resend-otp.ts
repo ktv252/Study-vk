@@ -1,6 +1,6 @@
 // /pages/api/auth/resend-otp.ts
-import { v4 as uuidv4 } from "uuid";
 import { getHeaders } from "@/utils/auth";
+import { PW_CONFIG } from "@/utils/pw-config";
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 
@@ -17,12 +17,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const apiRes = await fetch(`https://api.penpencil.co/v1/users/resend-otp?smsType=${smsType}`, {
+    const apiRes = await fetch(`${PW_CONFIG.baseUrl}/v1/users/resend-otp?smsType=${smsType}`, {
       method: "POST",
         headers: getHeaders(""),
       body: JSON.stringify({
         mobile: phoneNumber,
-        organizationId: "5eb393ee95fab7468a79d189",
+        organizationId: PW_CONFIG.organizationId,
       }),
     });
 
