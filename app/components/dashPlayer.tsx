@@ -23,7 +23,7 @@ type Props = {
   type: "dash";
   signedUrlQuery?: string;
   drmConfig?: DRMConfig;
-  Attachment?: string; // 👈 Add this line
+  Attachment?: any; // 👈 Add this line
 };
 type Quality = {
   id: number;

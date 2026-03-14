@@ -10,7 +10,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { batchId, subjectId, childId, videoContainerType = "DASH" } = req.query;
+  const { batchId, subjectId, childId, videoContainerType } = req.query;
 
   try {
     const PW_API = process.env.PW_API;
@@ -41,7 +41,8 @@ export default async function handler(
       }
 
       try {
-        const url = `${PW_API}/v1/videos/video-url-details?type=BATCHES&videoContainerType=${videoContainerType}&reqType=query&childId=${childId}&parentId=${batchId}&clientVersion=201`;
+        const vType = videoContainerType || "DASH";
+        const url = `${PW_API}/v1/videos/video-url-details?type=BATCHES&videoContainerType=${vType}&reqType=query&childId=${childId}&parentId=${batchId}&clientVersion=201`;
         const headers = getVideoHeaders(token.accessToken, token.randomId);
         const response = await axios.get(url, { headers });
 

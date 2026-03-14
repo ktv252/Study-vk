@@ -24,7 +24,7 @@ export default function HomePage() {
   const [clearKeys, setClearKeys] = useState<any>(null);
   const [signedUrlQuery, setSignedUrlQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [Attachment, setAttachment] = useState<string | null>(null);
+  const [Attachment, setAttachment] = useState<any>(null);
 
   // Params
   const batchId = params?.get("batchId") || "";
