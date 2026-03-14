@@ -54,7 +54,7 @@ export function getVideoHeaders(token: string, randomId: string) {
     authorization: `Bearer ${token}`,
     "client-id": "5eb393ee95fab7468a79d189",
     "client-type": "WEB",
-    "client-version": "200",
+    "client-version": "201",
     "content-type": "application/json",
     devicememory: "8192",
     devicestreamingtechnology: JSON.stringify({
