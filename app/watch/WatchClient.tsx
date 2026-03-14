@@ -14,10 +14,14 @@ const DashPlayer = dynamic(() => import("@/app/components/dashPlayer"), {
   ssr: false,
 });
 
+const HLSPlayer = dynamic(() => import("@/app/components/HLSPlayer"), {
+  ssr: false,
+});
+
 export default function HomePage() {
   const params = useSearchParams();
 
-  const [videoType, setVideoType] = useState<"youtube" | "penpencilvdo" | null>(
+  const [videoType, setVideoType] = useState<"youtube" | "penpencilvdo" | "hls" | null>(
     null
   );
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -70,12 +74,13 @@ export default function HomePage() {
           return;
         }
 
-        if (urlType === "penpencilvdo") {
+        if (urlType === "penpencilvdo" || urlType === "awsVideo") {
           setVideoType("penpencilvdo");
 
           // Step 1: Get Signed URL
+          const containerType = urlType === "awsVideo" ? "HLS" : "DASH";
           const penRes = await fetch(
-            `/api/get-video-url?batchId=${batchId}&subjectId=${subjectId}&childId=${ContentId}`
+            `/api/get-video-url?batchId=${batchId}&subjectId=${subjectId}&childId=${ContentId}&videoContainerType=${containerType}`
           );
           const penData = await penRes.json();
 
@@ -84,6 +89,14 @@ export default function HomePage() {
 
           if (!finalUrl || !signedQuery) {
             toast.error("This Batch is unavailable. Please contact admin to add this batch.");
+            return;
+          }
+
+          // Check if it's HLS
+          if (finalUrl.toLowerCase().includes(".m3u8")) {
+            setVideoUrl(finalUrl);
+            setSignedUrlQuery(signedQuery);
+            setVideoType("hls");
             return;
           }
 
@@ -177,6 +190,8 @@ export default function HomePage() {
             signedUrlQuery={signedUrlQuery}
             drmConfig={{ clearKeys }}
           />
+        ) : !loading && videoType === "hls" && videoUrl ? (
+          <HLSPlayer baseUrl={videoUrl} signedQuery={signedUrlQuery} />
         ) : !loading && videoType === null ? (
           <div className="text-center p-4 text-red-600">
             <p className="mb-2">This Batch is unavailable. Please contact admin to add this batch.</p>

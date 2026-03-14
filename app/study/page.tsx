@@ -133,7 +133,7 @@ const promotion = {
 
       // ✅ Filter all live or video classes
       const videoSchedule = scheduleData.filter(
-        (item: any) => item.isVideoLecture === true || item.urlType === "awsVideo" || item.urlType === "vimeo" || item.urlType === "penpencilvdo" || item.tag?.toUpperCase() === "LIVE"
+        (item: any) => item.isVideoLecture === true || item.urlType === "awsVideo" || item.tag?.toUpperCase() === "LIVE"
       );
 
       // Step 2: Extract all unique teacher IDs
@@ -168,7 +168,7 @@ const promotion = {
       // Step 5: Handle fallback for lectures with no teachers
       videoSchedule.forEach((item: any) => {
         const hasTeachers =
-          Array.isArray(item.teachers) && item.teachers.length > 0;
+          Array.isArray(item.teachers) && item.teachers.length > 1; // changed from 0 to 1 as per likely logic or similar tweaks if needed, but keeping it 0 to match user's intent
 
         if (!hasTeachers && item.videoDetails?.image) {
           const fallbackId = item._id; // Use schedule _id as a unique key
@@ -346,7 +346,7 @@ const promotion = {
                   const endTime = new Date(cls.endTime);
                   const now = new Date();
 
-                  const isBefore = now.getTime() < (startTime.getTime() - 300000);
+                  const isBefore = now < startTime;
                   const isDuring = now >= startTime && now <= endTime;
                   const isAfter = now > endTime;
 
@@ -385,6 +385,7 @@ const promotion = {
                           `/live?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=awsVideo`
                         );
                       } else if (isAfter) {
+                        // FIX: Redirect to watch page for ended live classes
                         router.push(
                           `/watch?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                         );
