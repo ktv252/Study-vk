@@ -5,7 +5,7 @@ export function getHeaders(token: string) {
   return {
     accept: "application/json, text/plain, */*",
     "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,hi;q=0.7,zh-CN;q=0.6,zh;q=0.5",
-    Authorization: `Bearer ${token.trim()}`,
+    Authorization: `Bearer ${(token || "").trim()}`,
     "client-id": "5eb393ee95fab7468a79d189",
     "client-type": "WEB",
     "client-version": "2.1.1",

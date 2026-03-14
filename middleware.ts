@@ -7,10 +7,10 @@ const REFRESH_API_PATH = "/api/TokenManager/refreshTokens";
 const REFRESH_API_KEY = process.env.REFRESH_API_KEY;
 const PUBLIC_API_PATHS = ["/api/auth"];
 const ADMIN_API_PATHS = ["/api/admin"];
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
-const baseUrl = process.env.BASE_URL;
-if (!baseUrl) {
-  throw new Error("Missing BASE_URL environment variable error in middleware!");
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "default_jwt_secret_for_development");
+const baseUrl = process.env.BASE_URL || "";
+if (!baseUrl && process.env.NODE_ENV === "production") {
+  console.warn("Warning: BASE_URL environment variable is missing!");
 }
 const isPublicApi = (pathname: string) =>
   PUBLIC_API_PATHS.some((publicPath) => pathname.startsWith(publicPath));

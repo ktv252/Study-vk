@@ -11,11 +11,13 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MOGODB_URI_INTERNAL = process.env.MONGODB_URI || "";
 
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI in .env.local");
+if (!MOGODB_URI_INTERNAL && process.env.NODE_ENV === "production") {
+  console.error("CRITICAL: MONGODB_URI is not defined in environment variables!");
 }
+
+const MONGODB_URI = MOGODB_URI_INTERNAL;
 
 // Define a custom type for your cache object
 interface MongooseCache {

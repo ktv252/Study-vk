@@ -131,9 +131,9 @@ const promotion = {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter only video lectures
+      // ✅ Filter all live or video classes
       const videoSchedule = scheduleData.filter(
-        (item: any) => item.isVideoLecture === true
+        (item: any) => item.isVideoLecture === true || item.urlType === "awsVideo" || item.urlType === "vimeo" || item.urlType === "penpencilvdo" || item.tag?.toUpperCase() === "LIVE"
       );
 
       // Step 2: Extract all unique teacher IDs

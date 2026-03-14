@@ -43,3 +43,7 @@ scripts
 .env
 .env*.local
 .env.production
+
+# temporary files
+tsc_errors.txt
+tsc_output.txt
