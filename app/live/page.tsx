@@ -32,7 +32,7 @@ export default function LivePage() {
 
     const promise = toast.promise(
       fetch(
-        `/api/get-video-url?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}`
+        `/api/get-video-url?batchId=${batchId}&subjectId=${subjectId}&childId=${childId}&videoContainerType=HLS`
       ).then(async (res) => {
         const data = await res.json();
 

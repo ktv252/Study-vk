@@ -178,7 +178,9 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment }) => {
     });
 
     hlsRef.current = hls;
-    hls.loadSource(baseUrl);
+    const initialSep = baseUrl.includes("?") ? "&" : "?";
+    const fullInitialUrl = `${baseUrl}${initialSep}${signedQuery.replace(/^\?/, "")}`;
+    hls.loadSource(fullInitialUrl);
     hls.attachMedia(video);
 
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -189,10 +191,28 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment }) => {
       }));
       setAvailableQualities(qualities);
       setSelectedQuality("auto");
+      
+      video.play().catch(e => console.warn("Autoplay blocked:", e));
     });
 
     hls.on(Hls.Events.ERROR, (event, data) => {
       console.error("HLS.js error:", data);
+      if (data.fatal) {
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            console.log("fatal network error encountered, try to recover");
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            console.log("fatal media error encountered, try to recover");
+            hls.recoverMediaError();
+            break;
+          default:
+            console.error("HLS fatal error cannot be recovered:", data);
+            hls.destroy();
+            break;
+        }
+      }
     });
 
     return () => {

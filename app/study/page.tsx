@@ -346,7 +346,7 @@ const promotion = {
                   const endTime = new Date(cls.endTime);
                   const now = new Date();
 
-                  const isBefore = now < startTime;
+                  const isBefore = now.getTime() < (startTime.getTime() - 300000);
                   const isDuring = now >= startTime && now <= endTime;
                   const isAfter = now > endTime;
 
