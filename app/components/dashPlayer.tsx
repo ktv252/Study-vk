@@ -130,6 +130,8 @@ const VideoPlayer: React.FC<Props> = ({
 
   useEffect(() => {
     if (!videoRef.current) return;
+    shaka.polyfill.installAll();
+    let fallbackApplied = false;
 
     const video = videoRef.current;
 
