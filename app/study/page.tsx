@@ -385,7 +385,9 @@ const promotion = {
                           `/live?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=awsVideo`
                         );
                       } else if (isAfter) {
-                        toast.error("Live session has ended.");
+                        router.push(
+                          `/watch?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
+                        );
                       }
                     }
                   };
