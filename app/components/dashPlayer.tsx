@@ -24,6 +24,7 @@ type Props = {
   signedUrlQuery?: string;
   drmConfig?: DRMConfig;
   Attachment?: any; // 👈 Add this line
+  lectureTitle?: string;
   onPlayStateChange?: (isPlaying: boolean) => void;
 };
 type Quality = {
@@ -38,6 +39,7 @@ const VideoPlayer: React.FC<Props> = ({
   signedUrlQuery,
   drmConfig,
   Attachment,
+  lectureTitle,
   onPlayStateChange,
 }) => {
   // const contentType = "application/dash+xml";
@@ -669,7 +671,12 @@ const VideoPlayer: React.FC<Props> = ({
               <ArrowLeft className="w-9 h-9" />
               {/* <p>Buffered: {formatTime(bufferedTime)}</p> */}
             </div>
-            <div className="flex-1"></div>
+            {lectureTitle && (
+              <div className="flex-1 text-white font-medium text-lg truncate drop-shadow-md">
+                {lectureTitle}
+              </div>
+            )}
+            {!lectureTitle && <div className="flex-1"></div>}
             <div className="flex space-x-2 items-center lg:space-x-4">
               <div
                 onClick={() => setShowMenu((prev) => !prev)}

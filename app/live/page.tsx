@@ -14,6 +14,7 @@ export default function LivePage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [verificationUrl, setVerificationUrl] = useState<string | null>(null);
+  const [lectureTitle, setLectureTitle] = useState<string>("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -56,6 +57,24 @@ export default function LivePage() {
 
         seturl(videoData.url);
         setsignedUrl(videoData.signedUrl);
+
+        // Fetch Schedule for Topic/Title
+        try {
+          const scheduleRes = await fetch(
+            `/api/Schedule?BatchId=${batchId}&SubjectId=${subjectId}&ContentId=${childId}`
+          );
+          const scheduleData = await scheduleRes.json();
+          if (scheduleData?.success && scheduleData?.data) {
+            setLectureTitle(
+              scheduleData.data.topic ||
+                scheduleData.data.videoDetails?.name ||
+                ""
+            );
+          }
+        } catch (scheduleErr) {
+          console.error("Failed to fetch schedule for title:", scheduleErr);
+        }
+
         return data;
       }),
       {
@@ -126,5 +145,5 @@ export default function LivePage() {
     );
   }
 
-  return <HLSPlayer baseUrl={url} signedQuery={signedUrl} />;
+  return <HLSPlayer baseUrl={url} signedQuery={signedUrl} lectureTitle={lectureTitle} />;
 }

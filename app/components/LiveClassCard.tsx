@@ -6,6 +6,7 @@ interface LiveClassCardProps {
   teacherName: string;
   teacherImage?: string;
   subject: string;
+  lectureTitle: string;
   startTime: string;
   tag: string;
   onClick?: () => void;
@@ -16,6 +17,7 @@ const LiveClassCard: React.FC<LiveClassCardProps> = ({
   teacherName,
   teacherImage = "/assets/img/teacher-placeholder.png",
   subject,
+  lectureTitle,
   startTime,
   tag,
   onClick,
@@ -81,9 +83,14 @@ const LiveClassCard: React.FC<LiveClassCardProps> = ({
         </span>
       </div>
 
-      {/* Subject */}
-      <div className=" py-1 text-sm font-semibold text-foreground text-center border border-t-1 border-x-0  border-b-0 ">
-        {subject}
+      {/* Subject & Title */}
+      <div className="py-2 px-1 text-center border-t border-muted">
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">
+          {subject}
+        </div>
+        <div className="text-xs font-semibold text-foreground line-clamp-2 leading-tight">
+          {lectureTitle}
+        </div>
       </div>
     </div>
   );

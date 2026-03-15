@@ -30,6 +30,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [Attachment, setAttachment] = useState<any>(null);
   const [isPlayerPlaying, setIsPlayerPlaying] = useState(false);
+  const [lectureTitle, setLectureTitle] = useState<string>("");
 
   // Params
   const batchId = params?.get("batchId") || "";
@@ -54,6 +55,8 @@ export default function HomePage() {
         }
 
         const urlType = scheduleData.data.urlType;
+        const topic = scheduleData.data.topic || scheduleData.data.videoDetails?.name || "";
+        setLectureTitle(topic);
 
         const homeworkIds = scheduleData?.data?.homeworkIds?.[0];
         // console.log("homeworkIds", homeworkIds);
@@ -218,6 +221,7 @@ export default function HomePage() {
         {!loading && videoType === "youtube" && videoUrl && (
           <YouTubePlayer 
             videoId={extractYouTubeVideoId(videoUrl)} 
+            lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />
         )}
@@ -229,12 +233,14 @@ export default function HomePage() {
             Attachment={Attachment || undefined}
             signedUrlQuery={signedUrlQuery}
             drmConfig={{ clearKeys }}
+            lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />
         ) : !loading && videoType === "hls" && videoUrl ? (
           <HLSPlayer 
             baseUrl={videoUrl} 
             signedQuery={signedUrlQuery} 
+            lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />
         ) : !loading && videoType === null ? (

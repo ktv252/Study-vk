@@ -403,6 +403,7 @@ export default function Home() {
                       teacherName={teacherName}
                       teacherImage={teacherImage}
                       subject={cls.subjectId?.name || "Subject"}
+                      lectureTitle={cls.topic || "Untitled Lecture"}
                       startTime={startTime.toLocaleTimeString("en-IN", {
                         hour: "2-digit",
                         minute: "2-digit",

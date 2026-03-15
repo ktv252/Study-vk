@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import "../globals.css";
 type Props = {
   videoId: string;
+  lectureTitle?: string;
   onPlayStateChange?: (isPlaying: boolean) => void;
 };
 
@@ -30,7 +31,7 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-export default function YouTubePlayer({ videoId, onPlayStateChange }: Props) {
+export default function YouTubePlayer({ videoId, lectureTitle, onPlayStateChange }: Props) {
   const actualVideoId = extractVideoId(videoId);
 
   const playerRef = useRef<YouTubePlayer | null>(null);
@@ -385,7 +386,12 @@ export default function YouTubePlayer({ videoId, onPlayStateChange }: Props) {
             >
               <ArrowLeft className="w-9 h-9" />
             </div>
-            <div className="flex-1"></div>
+            {lectureTitle && (
+              <div className="flex-1 text-white font-medium text-lg truncate drop-shadow-md">
+                {lectureTitle}
+              </div>
+            )}
+            {!lectureTitle && <div className="flex-1"></div>}
             <div className="flex space-x-2 items-center lg:space-x-4">
               <div className="transition-all bg-opacity-30 animate-in slide-in-from-top duration-200 opacity-100 player-icon cursor-pointer hover:scale-105">
                 <div className="w-[35px] h-[35px] md:w-[35px] md:h-[35px] z-[10]">

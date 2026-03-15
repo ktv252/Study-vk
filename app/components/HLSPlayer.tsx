@@ -27,10 +27,11 @@ type Props = {
   baseUrl: string;
   signedQuery: string;
   attachment?: string;
+  lectureTitle?: string;
   onPlayStateChange?: (isPlaying: boolean) => void;
 };
 
-const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, onPlayStateChange }) => {
+const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectureTitle, onPlayStateChange }) => {
   const hlsRef = useRef<Hls | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -465,7 +466,12 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, onPlay
             >
               <ArrowLeft className="w-9 h-9" />
             </div>
-            <div className="flex-1"></div>
+            {lectureTitle && (
+              <div className="flex-1 text-white font-medium text-lg truncate drop-shadow-md">
+                {lectureTitle}
+              </div>
+            )}
+            {!lectureTitle && <div className="flex-1"></div>}
             <div className="flex space-x-2 items-center lg:space-x-4">
               <div
                 onClick={() => setShowMenu((prev) => !prev)}
