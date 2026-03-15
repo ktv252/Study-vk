@@ -24,6 +24,7 @@ type Props = {
   signedUrlQuery?: string;
   drmConfig?: DRMConfig;
   Attachment?: any; // 👈 Add this line
+  onPlayStateChange?: (isPlaying: boolean) => void;
 };
 type Quality = {
   id: number;
@@ -37,6 +38,7 @@ const VideoPlayer: React.FC<Props> = ({
   signedUrlQuery,
   drmConfig,
   Attachment,
+  onPlayStateChange,
 }) => {
   // const contentType = "application/dash+xml";
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -146,8 +148,14 @@ const VideoPlayer: React.FC<Props> = ({
     video.removeAttribute("src");
     video.load();
 
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
+    const onPlay = () => {
+      setIsPlaying(true);
+      onPlayStateChange?.(true);
+    };
+    const onPause = () => {
+      setIsPlaying(false);
+      onPlayStateChange?.(false);
+    };
     const onTimeUpdate = () => setCurrentTime(video.currentTime);
     const onRateChange = () => setPlaybackRate(video.playbackRate);
 

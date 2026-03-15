@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import "../globals.css";
 type Props = {
   videoId: string;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 };
 
 function extractVideoId(input: string): string | null {
@@ -29,7 +30,7 @@ function extractVideoId(input: string): string | null {
   return null;
 }
 
-export default function YouTubePlayer({ videoId }: Props) {
+export default function YouTubePlayer({ videoId, onPlayStateChange }: Props) {
   const actualVideoId = extractVideoId(videoId);
 
   const playerRef = useRef<YouTubePlayer | null>(null);
@@ -261,9 +262,11 @@ export default function YouTubePlayer({ videoId }: Props) {
     if (state === 1) {
       player.pauseVideo();
       setIsPlaying(false);
+      onPlayStateChange?.(false);
     } else {
       player.playVideo();
       setIsPlaying(true);
+      onPlayStateChange?.(true);
     }
   };
 

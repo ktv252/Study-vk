@@ -29,6 +29,7 @@ export default function HomePage() {
   const [signedUrlQuery, setSignedUrlQuery] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [Attachment, setAttachment] = useState<any>(null);
+  const [isPlayerPlaying, setIsPlayerPlaying] = useState(false);
 
   // Params
   const batchId = params?.get("batchId") || "";
@@ -181,8 +182,8 @@ export default function HomePage() {
     if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
 
     xpIntervalRef.current = setInterval(async () => {
-      // Only earn XP if tab is focused/visible to prevent farming
-      if (document.visibilityState !== "visible") return;
+      // Only earn XP if tab is focused/visible AND video is actually playing
+      if (document.visibilityState !== "visible" || !isPlayerPlaying) return;
 
       try {
         const res = await fetch("/api/xp/update", { method: "POST" });
@@ -207,7 +208,7 @@ export default function HomePage() {
     return () => {
       if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
     };
-  }, []);
+  }, [isPlayerPlaying]); // Re-run effect when play state changes
 
   return (
     <div className="h-screen md:overflow-auto lg:overflow-hidden select-none">
@@ -215,7 +216,10 @@ export default function HomePage() {
         {loading && <div className="text-center p-4">Loading video...</div>}
 
         {!loading && videoType === "youtube" && videoUrl && (
-          <YouTubePlayer videoId={extractYouTubeVideoId(videoUrl)} />
+          <YouTubePlayer 
+            videoId={extractYouTubeVideoId(videoUrl)} 
+            onPlayStateChange={setIsPlayerPlaying}
+          />
         )}
 
         {!loading && videoType === "penpencilvdo" && videoUrl && clearKeys ? (
@@ -225,9 +229,14 @@ export default function HomePage() {
             Attachment={Attachment || undefined}
             signedUrlQuery={signedUrlQuery}
             drmConfig={{ clearKeys }}
+            onPlayStateChange={setIsPlayerPlaying}
           />
         ) : !loading && videoType === "hls" && videoUrl ? (
-          <HLSPlayer baseUrl={videoUrl} signedQuery={signedUrlQuery} />
+          <HLSPlayer 
+            baseUrl={videoUrl} 
+            signedQuery={signedUrlQuery} 
+            onPlayStateChange={setIsPlayerPlaying}
+          />
         ) : !loading && videoType === null ? (
           <div className="text-center p-4 text-red-600">
             <p className="mb-2">This Batch is unavailable. Please contact admin to add this batch.</p>

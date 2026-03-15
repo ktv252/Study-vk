@@ -27,9 +27,10 @@ type Props = {
   baseUrl: string;
   signedQuery: string;
   attachment?: string;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 };
 
-const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment }) => {
+const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, onPlayStateChange }) => {
   const hlsRef = useRef<Hls | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -229,7 +230,9 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment }) => {
     };
 
     const updatePlaying = () => {
-      setIsPlaying(!video.paused);
+      const playing = !video.paused;
+      setIsPlaying(playing);
+      onPlayStateChange?.(playing);
       video.playbackRate = playbackRate; // <-- Re-apply playback speed
     };
 
