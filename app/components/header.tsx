@@ -58,6 +58,7 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [lastResetDate, setLastResetDate] = useState<string | null>(null);
 
   const fetchLeaderboard = async () => {
     setLoadingLeaderboard(true);
@@ -66,6 +67,7 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard);
+        setLastResetDate(data.lastResetDate);
       }
     } catch (error) {
       console.error("Failed to fetch leaderboard:", error);
@@ -277,7 +279,14 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
                 </div>
               </div>
               <DialogTitle className="text-2xl font-bold text-center text-white">Leaderboard</DialogTitle>
-              <p className="text-center text-xs text-gray-500 mt-1 uppercase tracking-widest">Top 5 Students</p>
+              <p className="text-center text-xs text-gray-500 mt-1 uppercase tracking-widest flex items-center justify-center gap-2">
+                Top 5 Students
+                {lastResetDate && (
+                  <span className="text-yellow-500/80 font-bold border-l border-white/10 pl-2">
+                    Resets in {Math.max(0, 15 - Math.floor(Math.abs(new Date().getTime() - new Date(lastResetDate).getTime()) / (1000 * 60 * 60 * 24)))} Days
+                  </span>
+                )}
+              </p>
             </DialogHeader>
           </div>
 

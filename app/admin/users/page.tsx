@@ -50,6 +50,7 @@ interface User {
   hasLoggedIn: boolean;
   enrolledBatches: { batchId: string; name: string }[];
   batches: { batchId: string; batchName: string }[];
+  xp: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -209,6 +210,30 @@ export default function UsersPage() {
     }
   };
 
+  const handleResetXP = async (userId?: string) => {
+    const isGlobal = !userId;
+    if (isGlobal && !confirm("Are you sure you want to reset XP for ALL users? This cannot be undone.")) return;
+    if (!isGlobal && !confirm("Reset XP for this user?")) return;
+
+    try {
+      const res = await fetch("/api/admin/xp/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, resetAll: isGlobal }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message);
+        fetchUsers(); // Refresh list
+      } else {
+        toast.error(data.message || "Reset failed");
+      }
+    } catch (error) {
+      toast.error("Failed to connect to server");
+    }
+  };
+
   const toggleUserExpansion = (userId: string) => {
     setExpandedUser(expandedUser === userId ? null : userId);
   };
@@ -316,6 +341,15 @@ export default function UsersPage() {
             <span className="text-xs lg:text-sm text-gray-500">
               {pagination?.totalUsers || 0} total users
             </span>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => handleResetXP()}
+              className="ml-4 flex items-center gap-2 h-8 text-[10px] lg:text-xs"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Reset All XP
+            </Button>
           </div>
         </div>
 
@@ -540,6 +574,27 @@ export default function UsersPage() {
                                 ? "Has Logged In"
                                 : "Never Logged In"}
                             </Badge>
+                          </div>
+                          <div className="flex flex-row justify-between items-center gap-1">
+                            <span className="text-xs lg:text-sm text-gray-600">
+                              XP Points:
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs lg:text-sm font-bold text-yellow-600">
+                                {user.xp || 0}
+                              </span>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleResetXP(user._id);
+                                }}
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                           <div className="flex flex-row justify-between gap-1">
                             <span className="text-xs lg:text-sm text-gray-600">

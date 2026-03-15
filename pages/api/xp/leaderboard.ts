@@ -17,7 +17,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select("UserName photoUrl xp")
       .lean();
 
-    return res.status(200).json({ success: true, leaderboard: topUsers });
+    const ServerConfig = (await import("@/models/ServerConfig")).default;
+    const config = await ServerConfig.findById(1);
+
+    return res.status(200).json({ 
+      success: true, 
+      leaderboard: topUsers,
+      lastResetDate: config?.xpLastResetDate || new Date()
+    });
   } catch (err: any) {
     return res.status(500).json({ message: err.message || "Server error" });
   }

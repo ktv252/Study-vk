@@ -12,6 +12,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const authUser = await authenticateUser(req, res);
     await dbConnect();
 
+    // ✅ Automatic 15-Day XP Reset Logic
+    const ServerConfig = (await import("@/models/ServerConfig")).default;
+    let config = await ServerConfig.findById(1);
+    if (!config) {
+      // Create if doesn't exist (initial setup)
+      config = await ServerConfig.create({
+        webName: "Study VK",
+        registrationOpen: true,
+        sidebarLogoUrl: "",
+        sidebarTitle: "Study VK",
+        username: "admin",
+        password: "changeme",
+        shortner_servers: [],
+        xpLastResetDate: new Date()
+      });
+    }
+
+    const resetDate = config.xpLastResetDate ? new Date(config.xpLastResetDate) : new Date(0);
+    const diffTime = Math.abs(new Date().getTime() - resetDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays >= 15) {
+      // Reset EVERYONE'S XP
+      await User.updateMany({}, { $set: { xp: 0 } });
+      config.xpLastResetDate = new Date();
+      await config.save();
+      console.log("XP Reset Cycle Triggered (15 Days Matched)");
+    }
+
     // Fetch user to check last update time
     const user = await User.findById(authUser._id);
     if (!user) {

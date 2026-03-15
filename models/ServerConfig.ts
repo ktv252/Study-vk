@@ -25,6 +25,7 @@ export interface IServerConfig extends mongoose.Document {
 
   verificationEnabled?: boolean;
   verificationDuration?: number; // hours
+  xpLastResetDate?: Date;
 
   updatedAt: Date;
 }
@@ -55,10 +56,9 @@ const serverConfigSchema = new mongoose.Schema<IServerConfig>(
     },
     verificationEnabled: { type: Boolean, default: false },
     verificationDuration: { type: Number, default: 36 }, // 36 hours default
+    xpLastResetDate: { type: Date, default: null },
   },
-  {
-    timestamps: { createdAt: false, updatedAt: true },
-  }
+  { timestamps: { createdAt: false, updatedAt: true } }
 );
 
 // Hash password before saving if modified
