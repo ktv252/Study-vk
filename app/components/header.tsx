@@ -144,7 +144,7 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
       } catch (err) {
         console.error("Failed to sync user data:", err);
       }
-    }, 30000); // 30 seconds
+    }, 2000); // 2 seconds (Real-time sync)
 
     // Listen for storage changes in the same window
     window.addEventListener("storage_update", updateUserData);
@@ -194,7 +194,7 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
           >
             <Trophy className="w-3.5 h-3.5 text-yellow-500 group-hover:scale-110 transition-transform" />
             <span className="text-xs font-bold text-yellow-500">
-              {user?.xp || 0} <span className="text-[9px] opacity-70">XP</span>
+              {Math.floor(user?.xp || 0)} <span className="text-[9px] opacity-70">XP</span>
             </span>
           </div>
 
@@ -248,7 +248,7 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
                     </div>
                   </div>
                   <p className="text-sm font-bold text-white capitalize">{user?.name}</p>
-                  <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-widest mt-1">{user?.xp || 0} XP Earned</p>
+                  <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-widest mt-1">{Math.floor(user?.xp || 0)} XP Earned</p>
                 </div>
                 <DropdownMenuItem onClick={() => router.push("/profile")} className="cursor-pointer rounded-lg m-1 focus:bg-white/5 transition-colors">
                   <User className="mr-2 h-4 w-4" /> <span>My Profile</span>
@@ -319,7 +319,7 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
                     <p className="text-[10px] text-gray-500 uppercase font-medium">Student</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-yellow-500">{u.xp}</p>
+                    <p className="text-sm font-black text-yellow-500">{Math.floor(u.xp)}</p>
                     <p className="text-[9px] text-gray-500 uppercase font-bold tracking-tighter">XP Points</p>
                   </div>
                 </div>
