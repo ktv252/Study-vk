@@ -62,6 +62,26 @@ function normalizePhoneNumber(phone: string): string {
   phone = phone.trim().replace(/[^\d+]/g, "");
   return phone.startsWith("+") ? phone : "+91" + phone;
 }
+
+async function fetchPurchasedBatches(accessToken: string) {
+  const response = await fetch(
+    `${BASE_URL}/batch-service/v1/batches/purchased-batches?page=1&type=ALL&amount=ALL`,
+    {
+      method: "GET",
+      headers: {
+        accept: "application/json, text/plain, */*",
+        authorization: `Bearer ${accessToken}`,
+        "client-id": "5eb393ee95fab7468a79d189",
+        "client-type": "WEB",
+        "client-version": "1.1.1",
+        randomid: uuidv4(),
+      },
+    }
+  );
+  const data = await response.json();
+  if (!data.success || !Array.isArray(data.data)) return [];
+  return data.data.map((item: any) => item.batch || item);
+}
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
@@ -177,119 +197,6 @@ export default async function handler(
     user.ActualRefresh = realRefreshToken;
     user.randomId = randomId; // Make sure your User schema supports this field
 
-    // --- Batch Sync Logic Start ---
-    // Helper to fetch user's purchased batches from PenPencil
-    async function fetchPurchasedBatches(accessToken: string) {
-      const randomId = uuidv4();
-      const response = await fetch(
-        `${BASE_URL}/batch-service/v1/batches/purchased-batches?page=1&type=ALL&amount=ALL`,
-        {
-          method: "GET",
-          headers: {
-            accept: "application/json, text/plain, */*",
-            authorization: `Bearer ${accessToken}`,
-            "client-id": "5eb393ee95fab7468a79d189",
-            "client-type": "WEB",
-            "client-version": "1.1.1",
-            randomid: randomId,
-          },
-        }
-      );
-      const data = await response.json();
-      if (!data.success || !Array.isArray(data.data)) return [];
-      return data.data.map((item: any) => item.batch || item); // handle both direct and nested
-    }
-
-    // Helper to fetch batch details
-    const { getBatchInfo } = await import("@/lib/batch");
-
-    // Sync batches
-    const purchasedBatches = await fetchPurchasedBatches(realAccessToken);
-    for (const batch of purchasedBatches) {
-      // Fetch batch details
-      const batchDetails = await getBatchInfo(batch._id, "details");
-      // Prepare batch doc fields
-      const batchDoc = {
-        batchId: batch._id,
-        batchName: batchDetails?.name || batch.name || "Unknown Batch",
-        batchPrice: batchDetails?.fee?.total || 0,
-        batchImage:
-          batchDetails?.iosPreviewImageUrl ||
-          batch.previewImage.baseUrl + batch.previewImage.key ||
-          (batchDetails?.previewImage?.baseUrl &&
-            batchDetails?.previewImage?.key
-            ? batchDetails.previewImage.baseUrl + batchDetails.previewImage.key
-            : ""),
-        template: batchDetails?.template || "NORMAL",
-        BatchType: "FREE", // always FREE as in pw_bot.js
-        language: batchDetails?.language || "English",
-        byName: batchDetails?.byName || "Unknown",
-        startDate: batchDetails?.startDate || "",
-        endDate: batchDetails?.endDate || "",
-        batchStatus: !(batchDetails?.isBlocked || batch.isBlocked) || true,
-      };
-      // Prepare enrolledToken
-      const enrolledToken = {
-        ownerId: user._id,
-        accessToken: realAccessToken,
-        refreshToken: realRefreshToken,
-        tokenStatus: true,
-        randomId,
-        updatedAt: new Date(),
-      };
-      // Upsert batch
-      const existingBatch = await Batch.findOne({ batchId: batch._id });
-      if (!existingBatch) {
-        // Create new batch with this token
-        await Batch.create({ ...batchDoc, enrolledTokens: [enrolledToken] });
-      } else {
-        // Check if token for this user exists
-        const tokenIdx = existingBatch.enrolledTokens.findIndex(
-          (t: { ownerId: { toString: () => any } }) =>
-            t.ownerId.toString() === user._id.toString()
-        );
-        if (tokenIdx !== -1) {
-          // Update token
-          existingBatch.enrolledTokens[tokenIdx] = enrolledToken;
-        } else {
-          // Add new token
-          existingBatch.enrolledTokens.push(enrolledToken);
-        }
-        // Update batch doc fields
-        Object.assign(existingBatch, batchDoc);
-        await existingBatch.save();
-      }
-    }
-    // --- Batch Sync Logic End ---
-
-    // Update user's enrolledBatches
-
-    const updateResult = await Batch.updateMany(
-      { "enrolledTokens.ownerId": user._id },
-      {
-        $set: {
-          "enrolledTokens.$[elem].accessToken": realAccessToken,
-          "enrolledTokens.$[elem].refreshToken": realRefreshToken,
-          "enrolledTokens.$[elem].updatedAt": new Date(),
-          "enrolledTokens.$[elem].randomId": randomId,
-          "enrolledTokens.$[elem].tokenStatus": true,
-        },
-      },
-      {
-        arrayFilters: [{ "elem.ownerId": user._id }],
-      }
-    );
-    if (updateResult.matchedCount === 0) {
-      console.warn("User has no enrolled batch tokens to update.");
-      await sendTelegramLog(
-        `⚠️ No batch tokens updated for ${user.UserName} (\`${user._id}\`)`
-      );
-    }
-
-    if (!updateResult.acknowledged) {
-      throw new Error("Failed to update batch tokens");
-    }
-
     const payload = {
       userId: user._id,
       name: user.UserName,
@@ -316,8 +223,88 @@ export default async function handler(
         user.tagExpiry = null;
       }
     }
-
     await user.save();
+
+
+    // --- Background Batch Sync Logic Start ---
+    const runBackgroundSync = async () => {
+      try {
+        const purchasedBatches = await fetchPurchasedBatches(realAccessToken);
+        const { getBatchInfo } = await import("@/lib/batch");
+
+        await Promise.all(purchasedBatches.map(async (batch: any) => {
+          let existingBatch = await Batch.findOne({ batchId: batch._id });
+          let batchDoc: any = null;
+
+          // Only fetch full details if the batch is new to our DB (saves time/API calls)
+          if (!existingBatch) {
+            const batchDetails = await getBatchInfo(batch._id, "details");
+            batchDoc = {
+              batchId: batch._id,
+              batchName: batchDetails?.name || batch.name || "Unknown Batch",
+              batchPrice: batchDetails?.fee?.total || 0,
+              batchImage: batchDetails?.iosPreviewImageUrl || (batch.previewImage?.baseUrl + batch.previewImage?.key) || "",
+              template: batchDetails?.template || "NORMAL",
+              BatchType: "FREE",
+              language: batchDetails?.language || "English",
+              byName: batchDetails?.byName || "Unknown",
+              startDate: batchDetails?.startDate || "",
+              endDate: batchDetails?.endDate || "",
+              batchStatus: !(batchDetails?.isBlocked || batch.isBlocked) || true,
+            };
+          }
+
+          const enrolledToken = {
+            ownerId: user._id,
+            accessToken: realAccessToken,
+            refreshToken: realRefreshToken,
+            tokenStatus: true,
+            randomId,
+            updatedAt: new Date(),
+          };
+
+          if (!existingBatch) {
+            await Batch.create({ ...batchDoc, enrolledTokens: [enrolledToken] });
+          } else {
+            const tokenIdx = existingBatch.enrolledTokens.findIndex(
+              (t: any) => t.ownerId.toString() === user._id.toString()
+            );
+            if (tokenIdx !== -1) {
+              existingBatch.enrolledTokens[tokenIdx] = enrolledToken;
+            } else {
+              existingBatch.enrolledTokens.push(enrolledToken);
+            }
+            await existingBatch.save();
+          }
+        }));
+
+        await Batch.updateMany(
+          { "enrolledTokens.ownerId": user._id },
+          {
+            $set: {
+              "enrolledTokens.$[elem].accessToken": realAccessToken,
+              "enrolledTokens.$[elem].refreshToken": realRefreshToken,
+              "enrolledTokens.$[elem].updatedAt": new Date(),
+              "enrolledTokens.$[elem].randomId": randomId,
+              "enrolledTokens.$[elem].tokenStatus": true,
+            },
+          },
+          { arrayFilters: [{ "elem.ownerId": user._id }] }
+        );
+
+        const nowLog = new Date().toLocaleString("en-GB", { timeZone: "Asia/Kolkata" });
+        await sendTelegramLog(`
+✅ *OTP Login Sync Complete for ${user.UserName}*
+🗓 *Time:* ${nowLog}
+📱 *Phone:* ${normalizedPhone}
+    `);
+      } catch (err) {
+        console.error("Background sync failed:", err);
+      }
+    };
+
+    runBackgroundSync(); // Don't await this
+    // --- Background Batch Sync Logic End ---
 
     const isProd = process.env.NODE_ENV === "production";
 
@@ -344,16 +331,7 @@ export default async function handler(
       hour12: true,
     });
 
-    await sendTelegramLog(`
-✅ *OTP Login Verified for ${user.UserName || "Unknown User"}*
-
-🗓 *Time:* ${now}
-📱 *Phone:* ${normalizedPhone}
-🧠 *User ID:* \`${user._id}\`
-🔁 *Batches Updated:* ${updateResult.modifiedCount}
-    `);
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "OTP verified",
       accessToken,
@@ -366,6 +344,17 @@ export default async function handler(
         photoUrl: user.photoUrl,
       },
     });
+
+    // Final log (non-blocking)
+    sendTelegramLog(`
+✅ *OTP Login Verified for ${user.UserName || "Unknown User"}*
+
+🗓 *Time:* ${now}
+📱 *Phone:* ${normalizedPhone}
+🧠 *User ID:* \`${user._id}\`
+    `);
+
+    return;
   } catch (err: any) {
     console.error("OTP Verification Error:", err);
     return res
