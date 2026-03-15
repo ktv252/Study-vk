@@ -62,9 +62,13 @@ const LiveClassCard: React.FC<LiveClassCardProps> = ({
             tag.toUpperCase() === "LIVE"
               ? "bg-red-600 text-white"
               : tag.toUpperCase() === "UPCOMING"
-              ? "bg-purple-600 text-purple-100" // my favorite color is purple 😊
+              ? "bg-purple-600 text-purple-100"
               : tag.toUpperCase() === "ENDED"
               ? "bg-emerald-500 text-green-100"
+              : tag.toUpperCase() === "CANCELLED"
+              ? "bg-gray-500 text-white"
+              : tag.toUpperCase() === "NOTES"
+              ? "bg-blue-500 text-white"
               : "bg-blue-600 text-blue-100"
           }`}
         >

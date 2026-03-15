@@ -24,6 +24,7 @@ import {
   getEnrolledBatches,
   getTodaysSchedule,
   getUserDetailsList,
+  GetPdf,
 } from "@/utils/api";
 import { toast } from "sonner";
 import LiveClassCard from "@/app/components/LiveClassCard";
@@ -131,7 +132,7 @@ const promotion = {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter all live or video classes
+      // ✅ Filter all live, video, cancelled classes or notes
       const videoSchedule = scheduleData.filter(
         (item: any) => 
           item.isVideoLecture === true || 
@@ -140,7 +141,9 @@ const promotion = {
           item.urlType === "vimeo" || 
           item.urlType === "penpencilvdo" ||
           item.tag?.toUpperCase() === "LIVE" ||
-          item.tag?.toUpperCase() === "UPCOMING"
+          item.tag?.toUpperCase() === "UPCOMING" ||
+          item.tag?.toUpperCase() === "CANCELLED" ||
+          item.contentType?.toLowerCase().includes("notes")
       );
 
       // Step 2: Extract all unique teacher IDs
@@ -364,8 +367,36 @@ const promotion = {
                     ((startTime.getTime() - now.getTime()) / (1000 * 60)) % 60
                   );
 
-                  const handleClick = () => {
-                    const { batchId, subjectId, _id: childId, urlType } = cls;
+                  const handleClick = async () => {
+                    const { batchId, subjectId, _id: childId, urlType, tag, contentType, homeworkIds } = cls;
+
+                    if (tag?.toUpperCase() === "CANCELLED") {
+                      toast.error("This class has been cancelled.");
+                      return;
+                    }
+
+                    if (contentType?.toLowerCase().includes("notes")) {
+                      const attachment = homeworkIds?.[0]?.attachmentIds?.[0] || cls.attachmentIds?.[0];
+                      if (attachment?.baseUrl && attachment?.key) {
+                        window.open(attachment.baseUrl + attachment.key, "_blank");
+                      } else {
+                        // Try fetching PDF if simple attachment not found
+                        try {
+                          toast.loading("Fetching PDF...");
+                          const res = await GetPdf(batchId, subjectId?._id || "", childId);
+                          toast.dismiss();
+                          if (res.data?.baseUrl && res.data?.key) {
+                            window.open(res.data.baseUrl + res.data.key, "_blank");
+                          } else {
+                            toast.error("Note not available.");
+                          }
+                        } catch (err) {
+                           toast.dismiss();
+                           toast.error("Could not open note.");
+                        }
+                      }
+                      return;
+                    }
 
                     if (
                       urlType === "vimeo" ||
@@ -410,7 +441,7 @@ const promotion = {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                      tag={cls.tag}
+                      tag={cls.contentType?.toLowerCase().includes("notes") ? "NOTES" : cls.tag}
                       onClick={handleClick}
                       priority={idx === 0}
                     />
