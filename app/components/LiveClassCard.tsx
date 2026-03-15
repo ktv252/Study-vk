@@ -58,19 +58,14 @@ const LiveClassCard: React.FC<LiveClassCardProps> = ({
       {/* Status + Time */}
       <div className="flex justify-between items-center py-3 text-xs uppercase">
         <span
-          className={`px-2 py-1 rounded-md font-medium ${
-            tag.toUpperCase() === "LIVE"
+          className={`px-2 py-1 rounded-md font-medium ${tag.toUpperCase() === "LIVE"
               ? "bg-red-600 text-white"
               : tag.toUpperCase() === "UPCOMING"
-              ? "bg-purple-600 text-purple-100"
-              : tag.toUpperCase() === "ENDED"
-              ? "bg-emerald-500 text-green-100"
-              : tag.toUpperCase() === "CANCELLED"
-              ? "bg-gray-500 text-white"
-              : tag.toUpperCase() === "NOTES"
-              ? "bg-blue-500 text-white"
-              : "bg-blue-600 text-blue-100"
-          }`}
+                ? "bg-purple-600 text-purple-100" // my favorite color is purple 😊
+                : tag.toUpperCase() === "ENDED"
+                  ? "bg-emerald-500 text-green-100"
+                  : "bg-blue-600 text-blue-100"
+            }`}
         >
           {tag}
         </span>

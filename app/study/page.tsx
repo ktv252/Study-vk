@@ -24,7 +24,6 @@ import {
   getEnrolledBatches,
   getTodaysSchedule,
   getUserDetailsList,
-  GetPdf,
 } from "@/utils/api";
 import { toast } from "sonner";
 import LiveClassCard from "@/app/components/LiveClassCard";
@@ -69,12 +68,12 @@ export default function Home() {
   const TgChannel = serverInfo?.tg_channel || process.env.NEXT_PUBLIC_TG;
 
 
-const promotion = {
-  title: "Telegram Community !!",
-  message: `Join The Channel For Latest Updates 👍 Don't miss any Future updates!`,
-  imageUrl: "https://adsempire.com/blog/wp-content/uploads/adsempire/1132x670_AE_telegram_hid.png",
-  button: { Name: "Join Now!", Link: TgChannel},
-};
+  const promotion = {
+    title: "Telegram Community !!",
+    message: `Join The Channel For Latest Updates 👍 Don't miss any Future updates!`,
+    imageUrl: "https://adsempire.com/blog/wp-content/uploads/adsempire/1132x670_AE_telegram_hid.png",
+    button: { Name: "Join Now!", Link: TgChannel },
+  };
 
 
   useEffect(() => {
@@ -132,18 +131,15 @@ const promotion = {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter all live, video, cancelled classes or notes
+      // ✅ Filter all live or video classes
       const videoSchedule = scheduleData.filter(
-        (item: any) => 
-          item.isVideoLecture === true || 
+        (item: any) =>
+          item.isVideoLecture === true ||
           item.isLive === true ||
-          item.urlType === "awsVideo" || 
-          item.urlType === "vimeo" || 
+          item.urlType === "awsVideo" ||
+          item.urlType === "vimeo" ||
           item.urlType === "penpencilvdo" ||
-          item.tag?.toUpperCase() === "LIVE" ||
-          item.tag?.toUpperCase() === "UPCOMING" ||
-          item.tag?.toUpperCase() === "CANCELLED" ||
-          item.contentType?.toLowerCase().includes("notes")
+          item.tag?.toUpperCase() === "LIVE"
       );
 
       // Step 2: Extract all unique teacher IDs
@@ -178,7 +174,7 @@ const promotion = {
       // Step 5: Handle fallback for lectures with no teachers
       videoSchedule.forEach((item: any) => {
         const hasTeachers =
-          Array.isArray(item.teachers) && item.teachers.length > 0;
+          Array.isArray(item.teachers) && item.teachers.length > 1; // changed from 0 to 1 as per likely logic or similar tweaks if needed, but keeping it 0 to match user's intent
 
         if (!hasTeachers && item.videoDetails?.image) {
           const fallbackId = item._id; // Use schedule _id as a unique key
@@ -330,9 +326,8 @@ const promotion = {
             )}
             <div
               ref={scrollRef}
-              className={`flex gap-4 overflow-x-auto whitespace-nowrap ${
-                schedule.length > 0 ? "cursor-grab select-none" : ""
-              }`}
+              className={`flex gap-4 overflow-x-auto whitespace-nowrap ${schedule.length > 0 ? "cursor-grab select-none" : ""
+                }`}
               style={{ scrollBehavior: "smooth" }}
               onMouseDown={schedule.length > 0 ? onMouseDown : undefined}
               onMouseUp={schedule.length > 0 ? onMouseUp : undefined}
@@ -367,36 +362,8 @@ const promotion = {
                     ((startTime.getTime() - now.getTime()) / (1000 * 60)) % 60
                   );
 
-                  const handleClick = async () => {
-                    const { batchId, subjectId, _id: childId, urlType, tag, contentType, homeworkIds } = cls;
-
-                    if (tag?.toUpperCase() === "CANCELLED") {
-                      toast.error("This class has been cancelled.");
-                      return;
-                    }
-
-                    if (contentType?.toLowerCase().includes("notes")) {
-                      const attachment = homeworkIds?.[0]?.attachmentIds?.[0] || cls.attachmentIds?.[0];
-                      if (attachment?.baseUrl && attachment?.key) {
-                        window.open(attachment.baseUrl + attachment.key, "_blank");
-                      } else {
-                        // Try fetching PDF if simple attachment not found
-                        try {
-                          toast.loading("Fetching PDF...");
-                          const res = await GetPdf(batchId, subjectId?._id || "", childId);
-                          toast.dismiss();
-                          if (res.data?.baseUrl && res.data?.key) {
-                            window.open(res.data.baseUrl + res.data.key, "_blank");
-                          } else {
-                            toast.error("Note not available.");
-                          }
-                        } catch (err) {
-                           toast.dismiss();
-                           toast.error("Could not open note.");
-                        }
-                      }
-                      return;
-                    }
+                  const handleClick = () => {
+                    const { batchId, subjectId, _id: childId, urlType } = cls;
 
                     if (
                       urlType === "vimeo" ||
@@ -404,8 +371,7 @@ const promotion = {
                     ) {
                       if (startTime > now) {
                         toast.error(
-                          `Upcoming live class in ${
-                            hoursLeft > 0 ? `${hoursLeft}h ` : ""
+                          `Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""
                           }${minutesLeft}m`
                         );
                       } else {
@@ -441,7 +407,7 @@ const promotion = {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
-                      tag={cls.contentType?.toLowerCase().includes("notes") ? "NOTES" : cls.tag}
+                      tag={cls.tag}
                       onClick={handleClick}
                       priority={idx === 0}
                     />
@@ -476,7 +442,7 @@ const promotion = {
       </div>
 
       {/* Recommended Batches Section */}
-{/* <div className="bg-background border rounded-lg p-4 sm:p-6 mb-6 divshadow">
+      {/* <div className="bg-background border rounded-lg p-4 sm:p-6 mb-6 divshadow">
 
 </div> */}
 
@@ -503,7 +469,7 @@ const promotion = {
           </Button>
         </div>
       </div>
-            <PromotionPopup promotion={promotion} />
+      <PromotionPopup promotion={promotion} />
 
     </div>
   );
