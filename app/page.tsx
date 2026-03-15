@@ -64,7 +64,7 @@ export default function Home() {
     fetchServerInfo();
   }, []);
 
-  const appName = serverInfo?.webName || "PowerStudy VPS";
+  const appName = serverInfo?.webName || "VDK Study";
 
   return (
     <div className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 overflow-x-hidden">

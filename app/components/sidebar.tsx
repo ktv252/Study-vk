@@ -79,7 +79,7 @@ export function Sidebar({
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-white tracking-tight truncate max-w-[120px]">
-              {sidebarTitle || "PowerStudy"}
+              {sidebarTitle || "VDK Study"}
             </span>
             <span className="text-[10px] text-purple-400 font-bold uppercase tracking-widest">Premium</span>
           </div>

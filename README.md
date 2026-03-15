@@ -1,1 +1,2 @@
-WEB: STd_VDK
+# VDK Study
+Educational platform for students.

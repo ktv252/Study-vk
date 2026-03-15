@@ -7,7 +7,7 @@ import { QuantumParticles } from "@/app/components/QuantumParticles";
 import { LucideTriangleAlert, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 
-const appName = process.env.NEXT_PUBLIC_APP_NAME;
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "VDK Study";
 
 export default function Login() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
