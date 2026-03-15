@@ -57,6 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         telegramId: user.telegramId,
         PhotoUrl: user.photoUrl,
         tag: user.tag ?? null,
+        xp: user.xp || 0,
       },
       enrolledBatches: formattedBatches,
     });

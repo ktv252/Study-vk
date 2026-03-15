@@ -173,6 +173,32 @@ export default function HomePage() {
     };
   }, []); // ✅ runs globally, not just for penpencilvdo
 
+  // ✅ XP System: Increment XP every 1 minute while watching
+  useEffect(() => {
+    const xpInterval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/xp/update", { method: "POST" });
+        const data = await res.json();
+        
+        if (data.success && data.xp !== undefined) {
+          // Update local storage so Header can pick it up
+          const storedUser = localStorage.getItem("USER_DATA");
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            parsedUser.xp = data.xp;
+            localStorage.setItem("USER_DATA", JSON.stringify(parsedUser));
+            // Trigger custom event for other components (like Header) to update
+            window.dispatchEvent(new Event("storage_update"));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to update XP:", err);
+      }
+    }, 60000); // 1 minute
+
+    return () => clearInterval(xpInterval);
+  }, []);
+
   return (
     <div className="h-screen md:overflow-auto lg:overflow-hidden select-none">
       <div className="relative h-full">

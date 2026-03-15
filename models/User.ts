@@ -16,6 +16,7 @@ export interface IUser extends mongoose.Document {
   randomId?: string | null; // ✅ important to call /video url :)
   shortnerExpiresAt?: Date; // Verification expiration time
   enrolledBatches: { batchId: string; name: string }[];
+  xp: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +43,7 @@ const userSchema = new Schema<IUser>(
         name: { type: String, required: true },
       },
     ],
+    xp: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
