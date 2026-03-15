@@ -213,6 +213,9 @@ export default function HomePage() {
     };
   }, [isPlayerPlaying]); // Re-run effect when play state changes
 
+  // ✅ Memoize drmConfig to prevent unnecessary re-renders of DashPlayer
+  const drmConfig = React.useMemo(() => ({ clearKeys }), [clearKeys]);
+
   return (
     <div className="h-screen md:overflow-auto lg:overflow-hidden select-none">
       <div className="relative h-full">
@@ -232,7 +235,7 @@ export default function HomePage() {
             type="dash"
             Attachment={Attachment || undefined}
             signedUrlQuery={signedUrlQuery}
-            drmConfig={{ clearKeys }}
+            drmConfig={drmConfig}
             lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />

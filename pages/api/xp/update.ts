@@ -54,10 +54,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // We use 59s instead of 60s to account for slight network jitter
     if (secondsSinceLastUpdate < 59) {
-      return res.status(200).json({ 
-        success: true, 
+      return res.status(200).json({
+        success: true,
         xp: user.xp,
-        message: "Throttled: Updated too recently" 
+        message: "Throttled: Updated too recently"
       });
     }
 
