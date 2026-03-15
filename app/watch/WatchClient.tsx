@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import "../globals.css";
@@ -174,8 +174,16 @@ export default function HomePage() {
   }, []); // ✅ runs globally, not just for penpencilvdo
 
   // ✅ XP System: Increment XP every 1 minute while watching
+  const xpIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const xpInterval = setInterval(async () => {
+    // Clear existing if any
+    if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
+
+    xpIntervalRef.current = setInterval(async () => {
+      // Only earn XP if tab is focused/visible to prevent farming
+      if (document.visibilityState !== "visible") return;
+
       try {
         const res = await fetch("/api/xp/update", { method: "POST" });
         const data = await res.json();
@@ -194,9 +202,11 @@ export default function HomePage() {
       } catch (err) {
         console.error("Failed to update XP:", err);
       }
-    }, 60000); // 1 minute (1 XP per minute)
+    }, 62000); // 62 seconds (slightly over 1 min for safety)
 
-    return () => clearInterval(xpInterval);
+    return () => {
+      if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
+    };
   }, []);
 
   return (

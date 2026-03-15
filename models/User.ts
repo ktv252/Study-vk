@@ -17,6 +17,7 @@ export interface IUser extends mongoose.Document {
   shortnerExpiresAt?: Date; // Verification expiration time
   enrolledBatches: { batchId: string; name: string }[];
   xp: number;
+  lastXpUpdate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,6 +45,7 @@ const userSchema = new Schema<IUser>(
       },
     ],
     xp: { type: Number, default: 0 },
+    lastXpUpdate: { type: Date, default: null },
   },
   { timestamps: true }
 );
