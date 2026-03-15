@@ -123,9 +123,35 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
     };
 
     updateUserData();
+
+    // ✅ Multi-device Sync: Poll for user data (XP) updates every 30 seconds
+    const syncInterval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/AboutMe");
+        const data = await res.json();
+        if (data.success && data.user) {
+          const storedUser = localStorage.getItem("USER_DATA");
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            // Update XP and other potential changes
+            parsedUser.xp = data.user.xp;
+            parsedUser.name = data.user.name;
+            parsedUser.photoUrl = data.user.PhotoUrl;
+            localStorage.setItem("USER_DATA", JSON.stringify(parsedUser));
+            updateUserData();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to sync user data:", err);
+      }
+    }, 30000); // 30 seconds
+
     // Listen for storage changes in the same window
     window.addEventListener("storage_update", updateUserData);
-    return () => window.removeEventListener("storage_update", updateUserData);
+    return () => {
+      window.removeEventListener("storage_update", updateUserData);
+      clearInterval(syncInterval);
+    };
   }, []);
 
   const handleLogout = async () => {
