@@ -58,6 +58,8 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [userRank, setUserRank] = useState<number>(-1);
+  const [leaderboardUserData, setLeaderboardUserData] = useState<any>(null);
   const [lastResetDate, setLastResetDate] = useState<string | null>(null);
 
   const fetchLeaderboard = async () => {
@@ -67,6 +69,8 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
       const data = await res.json();
       if (data.success) {
         setLeaderboard(data.leaderboard);
+        setUserRank(data.userRank);
+        setLeaderboardUserData(data.userData);
         setLastResetDate(data.lastResetDate);
       }
     } catch (error) {
@@ -337,6 +341,37 @@ export function Header({ isMobileMenuOpen, setIsMobileMenuOpen }: HeaderProps) {
               <div className="text-center py-10">
                 <p className="text-gray-500">No leaderboard data available</p>
               </div>
+            )}
+
+            {/* Current User Rank (if not in top 5) */}
+            {!loadingLeaderboard && userRank > 5 && leaderboardUserData && (
+              <>
+                <div className="flex items-center justify-center py-2">
+                  <div className="h-[1px] w-12 bg-white/10"></div>
+                  <span className="text-[10px] text-gray-500 mx-4 uppercase tracking-[0.2em] font-bold">Your Rank</span>
+                  <div className="h-[1px] w-12 bg-white/10"></div>
+                </div>
+                
+                <div className="flex items-center gap-4 p-3 rounded-xl bg-blue-600/10 border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                  <div className="w-6 text-center">
+                    <span className="text-sm font-bold text-blue-400">#{userRank}</span>
+                  </div>
+                  <Avatar className="h-10 w-10 border border-blue-500/20">
+                    <AvatarImage src={leaderboardUserData.photoUrl} />
+                    <AvatarFallback className="bg-zinc-900 text-xs font-bold">
+                      {leaderboardUserData.UserName?.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{leaderboardUserData.UserName}</p>
+                    <p className="text-[10px] text-blue-400 uppercase font-medium">Your Current Rank</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-blue-400">{Math.floor(leaderboardUserData.xp)}</p>
+                    <p className="text-[9px] text-gray-500 uppercase font-bold tracking-tighter">XP Points</p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
