@@ -12,8 +12,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const authUser = await authenticateUser(req, res);
     await dbConnect();
 
-    // Default increment is 1/6th of an XP (since we update every 10 seconds to reach 1 XP/min)
-    const amount = req.body.amount !== undefined ? parseFloat(req.body.amount) : 0.16666666666666666;
+    // Increment XP by 1 (1 XP per minute of watching)
+    const amount = req.body.amount !== undefined ? parseFloat(req.body.amount) : 1;
 
     // Increment XP
     const updatedUser = await User.findByIdAndUpdate(

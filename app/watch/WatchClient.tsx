@@ -194,7 +194,7 @@ export default function HomePage() {
       } catch (err) {
         console.error("Failed to update XP:", err);
       }
-    }, 10000); // 10 seconds (Real-time tracking)
+    }, 60000); // 1 minute (1 XP per minute)
 
     return () => clearInterval(xpInterval);
   }, []);
