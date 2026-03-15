@@ -205,7 +205,6 @@ export default async function handler(
 
     // Sync batches
     const purchasedBatches = await fetchPurchasedBatches(realAccessToken);
-    const userBatchList: { batchId: string; name: string }[] = [];
     for (const batch of purchasedBatches) {
       // Fetch batch details
       const batchDetails = await getBatchInfo(batch._id, "details");
@@ -260,17 +259,10 @@ export default async function handler(
         Object.assign(existingBatch, batchDoc);
         await existingBatch.save();
       }
-
-      // Add to user's batch list
-      userBatchList.push({
-        batchId: batch._id,
-        name: batchDoc.batchName,
-      });
     }
     // --- Batch Sync Logic End ---
 
     // Update user's enrolledBatches
-    user.enrolledBatches = userBatchList;
 
     const updateResult = await Batch.updateMany(
       { "enrolledTokens.ownerId": user._id },
