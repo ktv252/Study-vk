@@ -202,7 +202,7 @@ export default function HomePage() {
       } catch (err) {
         console.error("Failed to update XP:", err);
       }
-    }, 62000); // 62 seconds (slightly over 1 min for safety)
+    }, 60000); // Exactly 60 seconds (1 XP per minute)
 
     return () => {
       if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);

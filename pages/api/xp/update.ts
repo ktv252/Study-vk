@@ -47,13 +47,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Server-side throttle: Only allow XP update once every 50 seconds
+    // Server-side throttle: Only allow XP update once every 59 seconds
     const now = new Date();
     const lastUpdate = user.lastXpUpdate ? new Date(user.lastXpUpdate) : new Date(0);
     const secondsSinceLastUpdate = (now.getTime() - lastUpdate.getTime()) / 1000;
 
-    // We use 50s instead of 60s to account for slight network jitter
-    if (secondsSinceLastUpdate < 50) {
+    // We use 59s instead of 60s to account for slight network jitter
+    if (secondsSinceLastUpdate < 59) {
       return res.status(200).json({ 
         success: true, 
         xp: user.xp,
