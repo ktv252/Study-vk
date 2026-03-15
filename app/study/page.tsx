@@ -133,7 +133,14 @@ const promotion = {
 
       // ✅ Filter all live or video classes
       const videoSchedule = scheduleData.filter(
-        (item: any) => item.isVideoLecture === true || item.urlType === "awsVideo" || item.tag?.toUpperCase() === "LIVE"
+        (item: any) => 
+          item.isVideoLecture === true || 
+          item.isLive === true ||
+          item.urlType === "awsVideo" || 
+          item.urlType === "vimeo" || 
+          item.urlType === "penpencilvdo" ||
+          item.tag?.toUpperCase() === "LIVE" ||
+          item.tag?.toUpperCase() === "UPCOMING"
       );
 
       // Step 2: Extract all unique teacher IDs
@@ -168,7 +175,7 @@ const promotion = {
       // Step 5: Handle fallback for lectures with no teachers
       videoSchedule.forEach((item: any) => {
         const hasTeachers =
-          Array.isArray(item.teachers) && item.teachers.length > 1; // changed from 0 to 1 as per likely logic or similar tweaks if needed, but keeping it 0 to match user's intent
+          Array.isArray(item.teachers) && item.teachers.length > 0;
 
         if (!hasTeachers && item.videoDetails?.image) {
           const fallbackId = item._id; // Use schedule _id as a unique key
