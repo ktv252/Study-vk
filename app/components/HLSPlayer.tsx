@@ -35,6 +35,8 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
   const hlsRef = useRef<Hls | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const initialSeekDone = useRef(false);
+
 
   const LIVE_LATENCY = 5; // 5 seconds delay threshold
 
@@ -172,6 +174,8 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
     const video = videoRef.current;
     if (!video) return;
 
+    initialSeekDone.current = false;
+
     const hls = new Hls({
       xhrSetup: (xhr, url) => {
         const sep = url.includes("?") ? "&" : "?";
@@ -196,19 +200,12 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
       setAvailableQualities(qualities);
       setSelectedQuality("auto");
 
-      // For live streams, force join at the start of the available DVR window
-      if (hls.liveSyncPosition !== null) {
-        // If it's live, seek to the earliest possible point
-        // startPosition: 0 in config handles it usually, but let's be explicit
-        const start = video.seekable?.length ? video.seekable.start(0) : 0;
-        video.currentTime = start;
-      }
-
       video.play().catch(e => console.warn("Autoplay blocked:", e));
     });
 
-
     hls.on(Hls.Events.ERROR, (event, data) => {
+
+
       console.error("HLS.js error:", data);
       if (data.fatal) {
         switch (data.type) {
