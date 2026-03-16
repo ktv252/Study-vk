@@ -49,9 +49,10 @@ export default async function handler(
       headers: getHeaders(ActualToken),
     });
 
+    const data = response.data?.data;
     const attachment =
-      response.data?.data?.homeworkIds?.[0]?.attachmentIds?.[0];
-
+      data?.homeworkIds?.[0]?.attachmentIds?.[0] ||
+      data?.attachments?.[0];
 
     if (!attachment) {
       return res.status(404).json({ message: "Attachment not found" });
