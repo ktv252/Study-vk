@@ -47,20 +47,11 @@ export default function BatchContentPage() {
     try {
       if (attachment?.key && attachment?.baseUrl) {
         const fullUrl = attachment.baseUrl + attachment.key;
-
-        try {
-          const headRes = await fetch(fullUrl, { method: "HEAD" });
-
-          if (headRes.ok) {
-            window.open(fullUrl, "_blank");
-            return;
-          }
-        } catch (err) {
-          console.warn("HEAD check failed for attachment:", err);
-        }
+        window.open(fullUrl, "_blank");
+        return;
       }
 
-      // Use toast.promise to handle loading/success/error UI feedback
+      // If we don't have enough info in attachment, use toast.promise to fetch more info
       await toast.promise(
         (async () => {
           const result = await GetPdf(batchId, subjectId, pdfId);
@@ -70,14 +61,7 @@ export default function BatchContentPage() {
 
           if (key && baseUrl) {
             const fullUrl = baseUrl + key;
-
-            const headRes = await fetch(fullUrl, { method: "HEAD" });
-
-            if (headRes.ok) {
-              window.open(fullUrl, "_blank");
-            } else {
-              throw new Error("PDF exists but couldn't be opened.");
-            }
+            window.open(fullUrl, "_blank");
           } else {
             throw new Error("PDF not available or could not be generated.");
           }

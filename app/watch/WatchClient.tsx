@@ -243,6 +243,7 @@ export default function HomePage() {
           <HLSPlayer 
             baseUrl={videoUrl} 
             signedQuery={signedUrlQuery} 
+            Attachment={Attachment || undefined}
             lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />
