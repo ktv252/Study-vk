@@ -232,9 +232,14 @@ export default async function handler(
         const purchasedBatches = await fetchPurchasedBatches(realAccessToken);
         const { getBatchInfo } = await import("@/lib/batch");
 
+        const userBatchList: { batchId: string; name: string }[] = [];
+
         await Promise.all(purchasedBatches.map(async (batch: any) => {
           let existingBatch = await Batch.findOne({ batchId: batch._id });
           let batchDoc: any = null;
+
+          const bName = batch.name || "Unknown Batch";
+          userBatchList.push({ batchId: batch._id, name: bName });
 
           // Only fetch full details if the batch is new to our DB (saves time/API calls)
           if (!existingBatch) {
@@ -278,6 +283,22 @@ export default async function handler(
           }
         }));
 
+        // Update user's enrolled batches (merge with existing ones to avoid losing manually added ones)
+        const currentUser = await User.findById(user._id);
+        if (currentUser) {
+          const currentEnrolledIds = new Set(currentUser.enrolledBatches.map((b: any) => b.batchId));
+          let changed = false;
+          for (const b of userBatchList) {
+            if (!currentEnrolledIds.has(b.batchId)) {
+              currentUser.enrolledBatches.push(b);
+              changed = true;
+            }
+          }
+          if (changed) {
+            await currentUser.save();
+          }
+        }
+
         await Batch.updateMany(
           { "enrolledTokens.ownerId": user._id },
           {
@@ -297,6 +318,7 @@ export default async function handler(
 ✅ *OTP Login Sync Complete for ${user.UserName}*
 🗓 *Time:* ${nowLog}
 📱 *Phone:* ${normalizedPhone}
+📦 *Batches Synced:* ${userBatchList.length}
     `);
       } catch (err) {
         console.error("Background sync failed:", err);
