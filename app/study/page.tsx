@@ -44,12 +44,10 @@ export default function Home() {
   const [error, setError] = useState("");
   const [availableClasses, setAvailableClasses] = useState<EnrolledBatch[]>([]);
   const [schedule, setSchedule] = useState([]);
-  const [pdfSchedule, setPdfSchedule] = useState([]);
   const [teacherMap, setTeacherMap] = useState<
     Record<string, { name: string; imageUrl: string }>
   >({});
 
-  const [batchInfo, setBatchInfo] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -121,24 +119,23 @@ export default function Home() {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter video lectures and PDFs separately
-      const videoSchedule = scheduleData.filter(
-        (item: any) =>
-          item.isVideoLecture === true ||
+      // ✅ Filter live classes, videos, and standalone documents (Combine them)
+      const combinedSchedule = scheduleData.filter((item: any) => {
+        const isVideo = item.isVideoLecture === true ||
           item.isLive === true ||
           ["awsVideo", "vimeo", "penpencilvdo", "youtube"].includes(item.urlType) ||
-          item.tag?.toUpperCase() === "LIVE"
-      );
+          item.tag?.toUpperCase() === "LIVE";
 
-      const pdfScheduleData = scheduleData.filter((item: any) => {
         const hasAttachment = (item.attachments && item.attachments.length > 0) ||
-          (item.homeworkIds && item.homeworkIds[0]?.attachmentIds?.length > 0);
-        return !item.isVideoLecture && hasAttachment;
+          (item.homeworkIds && item.homeworkIds[0]?.attachmentIds?.length > 0) ||
+          ["pdf", "attachment"].includes(item.urlType);
+
+        return isVideo || hasAttachment;
       });
 
-      // Step 2: Extract all unique teacher IDs from videos
+      // Step 2: Extract all unique teacher IDs
       const teacherIdSet = new Set<string>();
-      videoSchedule.forEach((item: any) => {
+      combinedSchedule.forEach((item: any) => {
         if (Array.isArray(item.teachers) && item.teachers.length > 0) {
           item.teachers.forEach((id: string) => teacherIdSet.add(id));
         }
@@ -153,8 +150,7 @@ export default function Home() {
       }
 
       // Step 4: Create teacherId -> { name, imageUrl } map
-      const teacherMapTemp: Record<string, { name: string; imageUrl: string }> =
-        {};
+      const teacherMapTemp: Record<string, { name: string; imageUrl: string }> = {};
 
       teacherList.forEach((teacher: any) => {
         teacherMapTemp[teacher._id] = {
@@ -165,23 +161,20 @@ export default function Home() {
         };
       });
 
-      // Step 5: Handle fallback for lectures with no teachers
-      videoSchedule.forEach((item: any) => {
-        const hasTeachers =
-          Array.isArray(item.teachers) && item.teachers.length > 0;
-
-        if (!hasTeachers && item.videoDetails?.image) {
+      // Step 5: Handle fallback for items with no teachers (like PDFs or missing video images)
+      combinedSchedule.forEach((item: any) => {
+        const hasTeachers = Array.isArray(item.teachers) && item.teachers.length > 0;
+        if (!hasTeachers) {
           const fallbackId = item._id;
           teacherMapTemp[fallbackId] = {
             name: "",
-            imageUrl: item.videoDetails.image,
+            imageUrl: item.videoDetails?.image || "/assets/img/document-placeholder.png",
           };
         }
       });
 
       // Step 6: Update state
-      setSchedule(videoSchedule);
-      setPdfSchedule(pdfScheduleData);
+      setSchedule(combinedSchedule);
       setTeacherMap(teacherMapTemp);
       setErrorMsg("");
     } catch (err: any) {
@@ -193,7 +186,6 @@ export default function Home() {
       }
       setErrorMsg(message);
       setSchedule([]);
-      setPdfSchedule([]);
       setTeacherMap({});
     }
   };
@@ -279,7 +271,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Classes Section */}
+        {/* Combined Classes & PDFs Section */}
         <div className="mb-4">
           <h3 className="text-md font-medium mb-2">Today's Class</h3>
           <div className="rounded-lg p-3">
@@ -305,23 +297,35 @@ export default function Home() {
                   const teacherName = teacher?.name || "";
                   const teacherImage = teacher?.imageUrl;
 
-                  const startTime = new Date(cls.startTime);
-                  const endTime = new Date(cls.endTime);
+                  const startTime = cls.startTime ? new Date(cls.startTime) : null;
+                  const endTime = cls.endTime ? new Date(cls.endTime) : null;
                   const now = new Date();
 
-                  const isBefore = now < startTime;
-                  const isDuring = now >= startTime && now <= endTime;
-                  const isAfter = now > endTime;
+                  const isBefore = startTime ? now < startTime : false;
+                  const isDuring = (startTime && endTime) ? (now >= startTime && now <= endTime) : false;
+                  const isAfter = endTime ? now > endTime : false;
 
-                  const hoursLeft = Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60 * 60));
-                  const minutesLeft = Math.floor(((startTime.getTime() - now.getTime()) / (1000 * 60)) % 60);
+                  const hoursLeft = startTime ? Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60 * 60)) : 0;
+                  const minutesLeft = startTime ? Math.floor(((startTime.getTime() - now.getTime()) / (1000 * 60)) % 60) : 0;
 
                   const handleClick = () => {
-                    const { batchId, subjectId, _id: childId, urlType } = cls;
+                    const { batchId, subjectId, _id: childId, urlType, isVideoLecture } = cls;
                     const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
+                    const attachment = (cls.attachments && cls.attachments[0]) || (cls.homeworkIds && cls.homeworkIds[0]?.attachmentIds?.[0]);
 
+                    // 1. Handle Documents (PDFs)
+                    if (attachment && (isVideoLecture === false || ["pdf", "attachment"].includes(urlType) || !urlType)) {
+                        const baseUrl = attachment.baseUrl || attachment.baseUrl; // fallback logic if needed
+                        const key = attachment.key;
+                        if (baseUrl && key) {
+                            window.open(baseUrl + key, "_blank");
+                            return;
+                        }
+                    }
+
+                    // 2. Handle Videos
                     if (urlType === "vimeo" || (urlType === "awsVideo" && isBefore)) {
-                      if (startTime > now) {
+                      if (startTime && startTime > now) {
                         toast.error(`Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
                       } else {
                         toast.error("This class has not started yet. Try refreshing...");
@@ -332,9 +336,11 @@ export default function Home() {
                       if (isDuring) {
                         router.push(`/live?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=awsVideo`);
                       } else if (isAfter) {
-                        // Redirect to recording
                         router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
                       }
+                    } else if (attachment) {
+                        // Final fallback for anything with an attachment but no video flow
+                        window.open((attachment.baseUrl || "") + (attachment.key || ""), "_blank");
                     }
                   };
 
@@ -344,9 +350,9 @@ export default function Home() {
                       teacherName={teacherName}
                       teacherImage={teacherImage}
                       subject={cls.subjectId?.name || "Subject"}
-                      lectureTitle={cls.topic || cls.videoDetails?.name || "Untitled Lecture"}
-                      startTime={startTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                      tag={cls.tag}
+                      lectureTitle={cls.topic || cls.name || cls.videoDetails?.name || "Untitled"}
+                      startTime={startTime ? startTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "Document"}
+                      tag={cls.tag || (cls.isVideoLecture === false ? "PDF" : "")}
                       onClick={handleClick}
                       priority={idx === 0}
                     />
@@ -356,40 +362,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
-        {/* PDFs Section (Dedicated as requested) */}
-        {pdfSchedule.length > 0 && (
-          <div className="mb-4 mt-8">
-            <h3 className="text-md font-medium mb-2">Today's PDFs</h3>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {pdfSchedule.map((pdf: any) => (
-                <div key={pdf._id} className="bg-background border rounded-lg p-4 min-w-[240px] shadow-sm flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2 text-indigo-600">
-                      <FileText size={20} />
-                      <span className="text-xs font-bold uppercase tracking-wider">Document</span>
-                    </div>
-                    <h4 className="font-semibold text-foreground line-clamp-2 mb-1">{pdf.topic || pdf.name || "Lecture Note"}</h4>
-                    <p className="text-sm text-muted-foreground">{pdf.subjectId?.name || "Subject"}</p>
-                  </div>
-                  <Button
-                    onClick={() => {
-                        const attachment = pdf.attachments?.[0] || pdf.homeworkIds?.[0]?.attachmentIds?.[0];
-                        if (attachment?.baseUrl && attachment?.key) {
-                          window.open(attachment.baseUrl + attachment.key, "_blank");
-                        } else {
-                          toast.error("PDF not available");
-                        }
-                    }}
-                    className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    Open PDF
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="flex justify-center mt-6">
           <Button
