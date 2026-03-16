@@ -39,7 +39,7 @@ if (isNaN(JWT_ACCESS_EXPIRES_SECONDS)) {
 }
 
 const JWT_REFRESH_EXPIRES_DAYS = Number(process.env.JWT_REFRESH_EXPIRES_DAYS);
-const randomId = uuidv4();
+// const randomId = uuidv4(); // Move this inside handler
 
 type UserData = {
   id: string;
@@ -109,6 +109,7 @@ export default async function handler(
   }
 
   try {
+    const randomId = uuidv4();
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     await dbConnect();
 
@@ -232,16 +233,30 @@ export default async function handler(
         const purchasedBatches = await fetchPurchasedBatches(realAccessToken);
         const { getBatchInfo } = await import("@/lib/batch");
 
+        const userEnrolledBatches = [...(user.enrolledBatches || [])];
+        let userNeedsUpdate = false;
+
         await Promise.all(purchasedBatches.map(async (batch: any) => {
-          let existingBatch = await Batch.findOne({ batchId: batch._id });
+          const bId = batch._id || batch.batchId;
+          const bName = batch.name || batch.batchName || "Unknown Batch";
+
+          // 1. Update User's enrolledBatches if missing
+          const alreadyInUser = userEnrolledBatches.some((b: any) => b.batchId === bId);
+          if (!alreadyInUser) {
+            userEnrolledBatches.push({ batchId: bId, name: bName });
+            userNeedsUpdate = true;
+          }
+
+          // 2. Update Batch model and enrolledTokens
+          let existingBatch = await Batch.findOne({ batchId: bId });
           let batchDoc: any = null;
 
           // Only fetch full details if the batch is new to our DB (saves time/API calls)
           if (!existingBatch) {
-            const batchDetails = await getBatchInfo(batch._id, "details");
+            const batchDetails = await getBatchInfo(bId, "details");
             batchDoc = {
-              batchId: batch._id,
-              batchName: batchDetails?.name || batch.name || "Unknown Batch",
+              batchId: bId,
+              batchName: batchDetails?.name || bName,
               batchPrice: batchDetails?.fee?.total || 0,
               batchImage: batchDetails?.iosPreviewImageUrl || (batch.previewImage?.baseUrl + batch.previewImage?.key) || "",
               template: batchDetails?.template || "NORMAL",
@@ -250,7 +265,7 @@ export default async function handler(
               byName: batchDetails?.byName || "Unknown",
               startDate: batchDetails?.startDate || "",
               endDate: batchDetails?.endDate || "",
-              batchStatus: !(batchDetails?.isBlocked || batch.isBlocked) || true,
+              batchStatus: true,
             };
           }
 
@@ -267,7 +282,7 @@ export default async function handler(
             await Batch.create({ ...batchDoc, enrolledTokens: [enrolledToken] });
           } else {
             const tokenIdx = existingBatch.enrolledTokens.findIndex(
-              (t: any) => t.ownerId.toString() === user._id.toString()
+              (t: any) => t.ownerId && t.ownerId.toString() === user._id.toString()
             );
             if (tokenIdx !== -1) {
               existingBatch.enrolledTokens[tokenIdx] = enrolledToken;
@@ -278,6 +293,15 @@ export default async function handler(
           }
         }));
 
+        // ✅ Final User Update
+        if (userNeedsUpdate) {
+          await User.updateOne(
+            { _id: user._id },
+            { $set: { enrolledBatches: userEnrolledBatches } }
+          );
+        }
+
+        // ✅ Update all other batches where this user might already have a token
         await Batch.updateMany(
           { "enrolledTokens.ownerId": user._id },
           {
@@ -297,6 +321,7 @@ export default async function handler(
 ✅ *OTP Login Sync Complete for ${user.UserName}*
 🗓 *Time:* ${nowLog}
 📱 *Phone:* ${normalizedPhone}
+📦 *Purchased Batches:* ${purchasedBatches.length}
     `);
       } catch (err) {
         console.error("Background sync failed:", err);
