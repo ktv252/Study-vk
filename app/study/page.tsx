@@ -19,10 +19,12 @@ interface Promotion {
   button?: Button;
 }
 
+
 import {
   getEnrolledBatches,
   getTodaysSchedule,
   getUserDetailsList,
+  GetPdf,
 } from "@/utils/api";
 import { toast } from "sonner";
 import LiveClassCard from "@/app/components/LiveClassCard";
@@ -33,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 type EnrolledBatch = { _id: string; batchId: string; name: string };
 
@@ -44,24 +46,26 @@ export default function Home() {
   const [error, setError] = useState("");
   const [availableClasses, setAvailableClasses] = useState<EnrolledBatch[]>([]);
   const [schedule, setSchedule] = useState([]);
+  const [pdfSchedule, setPdfSchedule] = useState([]);
   const [teacherMap, setTeacherMap] = useState<
     Record<string, { name: string; imageUrl: string }>
   >({});
 
+  const [batchInfo, setBatchInfo] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [errorMsg, setErrorMsg] = useState<string>("");
-
+  
   const TgChannel = serverInfo?.tg_channel || process.env.NEXT_PUBLIC_TG;
 
-  const promotion = {
-    title: "Telegram Community !!",
-    message: `Join The Channel For Latest Updates 👍 Don't miss any Future updates!`,
-    imageUrl: "https://adsempire.com/blog/wp-content/uploads/adsempire/1132x670_AE_telegram_hid.png",
-    button: { Name: "Join Now!", Link: TgChannel },
-  };
+const promotion = {
+  title: "Telegram Community !!",
+  message: `Join The Channel For Latest Updates 👍 Don't miss any Future updates!`,
+  imageUrl: "https://adsempire.com/blog/wp-content/uploads/adsempire/1132x670_AE_telegram_hid.png",
+  button: { Name: "Join Now!", Link: TgChannel},
+};
 
   useEffect(() => {
     async function fetchServerInfo() {
@@ -80,7 +84,7 @@ export default function Home() {
   }, []);
 
   const OpenTelegramChannel = () => {
-    if (TgChannel) window.open(TgChannel, "_blank");
+    window.open(TgChannel, "_blank");
   };
 
   const onMouseDown = (e: React.MouseEvent) => {
@@ -119,23 +123,21 @@ export default function Home() {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter live classes, videos, and standalone documents (Combine them)
-      const combinedSchedule = scheduleData.filter((item: any) => {
-        const isVideo = item.isVideoLecture === true ||
-          item.isLive === true ||
-          ["awsVideo", "vimeo", "penpencilvdo", "youtube"].includes(item.urlType) ||
-          item.tag?.toUpperCase() === "LIVE";
+      // ✅ Filter video lectures and PDFs
+      const videoSchedule = scheduleData.filter(
+        (item: any) => item.isVideoLecture === true
+      );
+      const pdfScheduleData = scheduleData.filter(
+        (item: any) => !item.isVideoLecture && (
+          (item.attachments && item.attachments.length > 0) || 
+          (item.homeworkIds && item.homeworkIds.length > 0) ||
+          item.urlType === "pdf"
+        )
+      );
 
-        const hasAttachment = (item.attachments && item.attachments.length > 0) ||
-          (item.homeworkIds && item.homeworkIds[0]?.attachmentIds?.length > 0) ||
-          ["pdf", "attachment"].includes(item.urlType);
-
-        return isVideo || hasAttachment;
-      });
-
-      // Step 2: Extract all unique teacher IDs
+      // Step 2: Extract all unique teacher IDs from videos
       const teacherIdSet = new Set<string>();
-      combinedSchedule.forEach((item: any) => {
+      videoSchedule.forEach((item: any) => {
         if (Array.isArray(item.teachers) && item.teachers.length > 0) {
           item.teachers.forEach((id: string) => teacherIdSet.add(id));
         }
@@ -150,7 +152,8 @@ export default function Home() {
       }
 
       // Step 4: Create teacherId -> { name, imageUrl } map
-      const teacherMapTemp: Record<string, { name: string; imageUrl: string }> = {};
+      const teacherMapTemp: Record<string, { name: string; imageUrl: string }> =
+        {};
 
       teacherList.forEach((teacher: any) => {
         teacherMapTemp[teacher._id] = {
@@ -161,31 +164,38 @@ export default function Home() {
         };
       });
 
-      // Step 5: Handle fallback for items with no teachers (like PDFs or missing video images)
-      combinedSchedule.forEach((item: any) => {
-        const hasTeachers = Array.isArray(item.teachers) && item.teachers.length > 0;
-        if (!hasTeachers) {
-          const fallbackId = item._id;
+      // Step 5: Handle fallback for lectures with no teachers
+      videoSchedule.forEach((item: any) => {
+        const hasTeachers =
+          Array.isArray(item.teachers) && item.teachers.length > 0;
+
+        if (!hasTeachers && item.videoDetails?.image) {
+          const fallbackId = item._id; // Use schedule _id as a unique key
           teacherMapTemp[fallbackId] = {
             name: "",
-            imageUrl: item.videoDetails?.image || "/assets/img/document-placeholder.png",
+            imageUrl: item.videoDetails.image,
           };
         }
       });
 
-      // Step 6: Update state
-      setSchedule(combinedSchedule);
+      // Step 6: Update status
+      setSchedule(videoSchedule);
+      setPdfSchedule(pdfScheduleData);
       setTeacherMap(teacherMapTemp);
       setErrorMsg("");
     } catch (err: any) {
       let message = "Failed to fetch today's schedule.";
-      if (err?.message?.includes("401") || err?.message?.toLowerCase().includes("unauthorized")) {
+      if (
+        err?.message?.includes("401") ||
+        err?.message?.toLowerCase().includes("unauthorized")
+      ) {
         message = "You are not authorized. Please log in again.";
       } else if (err?.message) {
         message = err.message;
       }
       setErrorMsg(message);
       setSchedule([]);
+      setPdfSchedule([]);
       setTeacherMap({});
     }
   };
@@ -214,13 +224,20 @@ export default function Home() {
               (batch: EnrolledBatch) => batch._id === savedSelection._id
             );
             if (found) finalSelectedBatch = found;
-          } catch (e) {
-            finalSelectedBatch = fetchedBatches[0];
+          } catch (parseError) {
+            finalSelectedBatch = fetchedBatches[0] || {
+              _id: "",
+              batchId: "",
+              name: "Select Batch",
+            };
           }
         }
 
         setSelectedClass(finalSelectedBatch);
-        localStorage.setItem("selectedBatch", JSON.stringify(finalSelectedBatch));
+        localStorage.setItem(
+          "selectedBatch",
+          JSON.stringify(finalSelectedBatch)
+        );
 
         if (finalSelectedBatch.batchId) {
           fetchTodaysSchedule(finalSelectedBatch.batchId);
@@ -247,7 +264,10 @@ export default function Home() {
           <div className="flex items-center gap-2 w-full sm:w-auto border rounded-md">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="w-full sm:w-auto justify-between text-left outline-none">
+                <Button
+                  variant="ghost"
+                  className="w-full sm:w-auto justify-between text-left outline-none"
+                >
                   <span className="truncate">{selectedClass.name}</span>
                   <ChevronDown className="w-5 h-5 ml-2 flex-shrink-0" />
                 </Button>
@@ -259,7 +279,10 @@ export default function Home() {
                     key={cls?._id}
                     onClick={() => {
                       setSelectedClass(cls);
-                      localStorage.setItem("selectedBatch", JSON.stringify(cls));
+                      localStorage.setItem(
+                        "selectedBatch",
+                        JSON.stringify(cls)
+                      );
                       fetchTodaysSchedule(cls.batchId);
                     }}
                   >
@@ -271,29 +294,35 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Combined Classes & PDFs Section */}
+        {/* Combined Row System (Videos and PDFs mixed for high priority) */}
         <div className="mb-4">
           <h3 className="text-md font-medium mb-2">Today's Class</h3>
           <div className="rounded-lg p-3">
-            {errorMsg && <div className="bg-red-100 text-red-700 p-2 rounded mb-4 text-center">{errorMsg}</div>}
+            {errorMsg && (
+              <div className="bg-red-100 text-red-700 p-2 rounded mb-4 text-center">
+                {errorMsg}
+              </div>
+            )}
             <div
               ref={scrollRef}
-              className={`flex gap-4 overflow-x-auto whitespace-nowrap ${schedule.length > 0 ? "cursor-grab select-none" : ""
-                }`}
+              className={`flex gap-4 overflow-x-auto whitespace-nowrap ${
+                (schedule.length + pdfSchedule.length) > 0 ? "cursor-grab select-none" : ""
+              }`}
               style={{ scrollBehavior: "smooth" }}
-              onMouseDown={schedule.length > 0 ? onMouseDown : undefined}
-              onMouseUp={schedule.length > 0 ? onMouseUp : undefined}
-              onMouseLeave={schedule.length > 0 ? onMouseLeave : undefined}
-              onMouseMove={schedule.length > 0 ? onMouseMove : undefined}
+              onMouseDown={(schedule.length + pdfSchedule.length) > 0 ? onMouseDown : undefined}
+              onMouseUp={(schedule.length + pdfSchedule.length) > 0 ? onMouseUp : undefined}
+              onMouseLeave={(schedule.length + pdfSchedule.length) > 0 ? onMouseLeave : undefined}
+              onMouseMove={(schedule.length + pdfSchedule.length) > 0 ? onMouseMove : undefined}
             >
-              {schedule.length === 0 ? (
+              {(schedule.length === 0 && pdfSchedule.length === 0) ? (
                 <div className="bg-[#7e7e7e29] rounded-lg p-6 sm:p-8 text-center text-foreground w-full">
                   Classes not Scheduled yet
                 </div>
               ) : (
-                schedule.map((cls: any, idx: number) => {
+                [...schedule, ...pdfSchedule].map((cls: any, idx: number) => {
                   const teacherId = cls.teachers?.[0];
                   const teacher = teacherMap[teacherId] || teacherMap[cls._id];
+
                   const teacherName = teacher?.name || "";
                   const teacherImage = teacher?.imageUrl;
 
@@ -307,67 +336,51 @@ export default function Home() {
 
                   const hoursLeft = startTime ? Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60 * 60)) : 0;
                   const minutesLeft = startTime ? Math.floor(((startTime.getTime() - now.getTime()) / (1000 * 60)) % 60) : 0;
-                  const handleClick = () => {
+
+                  const handleClick = async () => {
                     const { batchId, subjectId, _id: childId, urlType, isVideoLecture } = cls;
-                    const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
-                    
-                    // Comprehensive attachment extraction
-                    const attachment = cls.attachments?.[0] || 
-                                       cls.homeworkIds?.[0]?.attachmentIds?.[0] || 
-                                       cls.attachmentData || 
-                                       (cls.urlType === "pdf" ? { baseUrl: "", key: cls.url } : null);
+                    const subId = subjectId?._id || subjectId;
 
-                    const isVideo = ["awsVideo", "vimeo", "penpencilvdo", "youtube"].includes(urlType) || isVideoLecture === true;
-                    
-                    // Determine if the video is currently "Ready to Play"
-                    const isVideoReady = (urlType === "penpencilvdo") || 
-                                         (urlType === "awsVideo" && (isDuring || isAfter)) ||
-                                         (urlType === "vimeo" && (isDuring || isAfter)) ||
-                                         (urlType === "youtube" && (isDuring || isAfter));
-
-                    // 1. If we have an attachment, open it if:
-                    // - It's not a video class
-                    // - OR it is a video class but the video is not ready yet (e.g. upcoming)
-                    // - OR it's explicitly tagged as a PDF/Attachment
-                    if (attachment && (attachment.baseUrl || attachment.key || attachment.url)) {
-                        const isExplicitDoc = ["pdf", "attachment"].includes(urlType) || isVideoLecture === false;
-                        const shouldOpenDoc = isExplicitDoc || !isVideoReady;
-
-                        if (shouldOpenDoc) {
-                            const fullUrl = attachment.url || (attachment.baseUrl + attachment.key);
-                            if (fullUrl && fullUrl !== "undefined") {
-                                window.open(fullUrl, "_blank");
-                                return;
-                            }
-                        }
+                    // 1. PDF/Attachment Flow (Use logic that "open successfully")
+                    const attachment = cls.attachments?.[0] || cls.homeworkIds?.[0]?.attachmentIds?.[0];
+                    if (attachment?.baseUrl && attachment?.key) {
+                        window.open(attachment.baseUrl + attachment.key, "_blank");
+                        return;
                     }
 
-                    // 2. Video Playback Logic
-                    if (urlType === "vimeo") {
-                        if (isBefore) {
-                            toast.error(`Upcoming class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
-                        } else {
-                            router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=vimeo&isLocked=false`);
-                        }
-                    } else if (urlType === "awsVideo") {
-                      if (isDuring) {
-                        router.push(`/live?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=awsVideo`);
-                      } else if (isAfter) {
-                        router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
-                      } else {
-                        // isBefore
+                    // Fallback to GetPdf API for any item labeled as PDF or without video flow
+                    if (!isVideoLecture || urlType === "pdf") {
+                        try {
+                            const result = await GetPdf(selectedClass.batchId, subId, childId);
+                            const key = result?.data?.key;
+                            const baseUrl = result?.data?.baseUrl;
+                            if (key && baseUrl) {
+                                window.open(baseUrl + key, "_blank");
+                                return;
+                            }
+                        } catch (e) {}
+                    }
+
+                    // 2. Video Playback Flow
+                    if (urlType === "vimeo" || (urlType === "awsVideo" && isBefore)) {
+                      if (startTime && startTime > now) {
                         toast.error(`Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
+                      } else {
+                        toast.error("This class has not started yet. Try refreshing...");
                       }
                     } else if (urlType === "penpencilvdo") {
-                      router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
-                    } else {
-                        // Final fallback for anything with an attachment
-                        if (attachment) {
-                            const fullUrl = attachment.url || (attachment.baseUrl + attachment.key);
-                            window.open(fullUrl, "_blank");
-                        } else {
-                            toast.error(isBefore ? "This class has not started yet." : "Content not available.");
-                        }
+                      router.push(`/watch?batchId=${batchId}&SubjectId=${subId}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
+                    } else if (urlType === "awsVideo") {
+                      if (isDuring) {
+                        router.push(`/live?batchId=${batchId}&SubjectId=${subId}&ChildId=${childId}&Type=awsVideo`);
+                      } else if (isAfter) {
+                        // Redirect to recording
+                        router.push(`/watch?batchId=${batchId}&SubjectId=${subId}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
+                      }
+                    } else if (attachment || cls.urlType === "pdf") {
+                        // Final final fallback
+                        const fullUrl = attachment ? (attachment.baseUrl + attachment.key) : cls.url;
+                        if (fullUrl) window.open(fullUrl, "_blank");
                     }
                   };
 
@@ -377,7 +390,7 @@ export default function Home() {
                       teacherName={teacherName}
                       teacherImage={teacherImage}
                       subject={cls.subjectId?.name || "Subject"}
-                      lectureTitle={cls.topic || cls.name || cls.videoDetails?.name || "Untitled"}
+                      lectureTitle={cls.topic || cls.name || "Untitled"}
                       startTime={startTime ? startTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "Document"}
                       tag={cls.tag || (cls.isVideoLecture === false ? "PDF" : "")}
                       onClick={handleClick}
@@ -390,7 +403,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center">
           <Button
             className="flex items-center gap-2"
             onClick={() => {
@@ -407,22 +420,27 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Community Section */}
-      <div className="bg-background border rounded-lg p-4 sm:p-6 mb-6 divshadow text-center sm:text-left">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
+      <div className="bg-background border rounded-lg p-4 sm:p-6 mb-6 divshadow">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-semibold">Join Our Community 🚀</h2>
             <p className="text-muted-foreground">
-              Join our Telegram channel to receive the latest updates 📢 and batch information 📚
+              Join our Telegram channel to receive the latest updates 📢 and
+              batch information 📚
             </p>
           </div>
-          <Button className="flex items-center gap-2 px-8" onClick={() => OpenTelegramChannel()}>
+        </div>
+
+        <div className="flex justify-center">
+          <Button
+            className="flex items-center gap-2"
+            onClick={() => OpenTelegramChannel()}
+          >
             Join Telegram Channel
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
-
       <PromotionPopup promotion={promotion} />
     </div>
   );
