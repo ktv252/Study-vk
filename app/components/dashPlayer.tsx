@@ -300,11 +300,7 @@ const VideoPlayer: React.FC<Props> = ({
             },
             clearKeys: drmConfig.clearKeys,
           },
-          streaming: {
-            startAtLiveEdge: false,
-          },
         });
-
       }
 
       if (signedUrlQuery) {
