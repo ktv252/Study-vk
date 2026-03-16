@@ -108,6 +108,13 @@ export default function HomePage() {
 
           // Step 2: Fetch MPD and extract default_KID
           const mpdRes = await fetch(fullMPDUrl);
+          if (!mpdRes.ok) {
+            const errorText = await mpdRes.text();
+            if (errorText.includes("AccessDenied")) {
+              throw new Error("Access Denied: The video storage server (GCS) is rejecting the request. This usually means the signed link has expired or the server is misconfigured.");
+            }
+            throw new Error(`Failed to fetch video manifest: ${mpdRes.status} ${mpdRes.statusText}`);
+          }
           const mpdText = await mpdRes.text();
 
           const parser = new DOMParser();

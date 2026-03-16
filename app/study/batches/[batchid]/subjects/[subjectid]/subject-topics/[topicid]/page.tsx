@@ -45,6 +45,11 @@ export default function BatchContentPage() {
 
   const handleOpen = async (attachment: any, pdfId: any) => {
     try {
+      if (!attachment?.key || attachment.key === "/" || !attachment?.baseUrl) {
+        toast.error("Invalid attachment data. Key or BaseURL missing.");
+        return;
+      }
+
       if (attachment?.key && attachment?.baseUrl) {
         const fullUrl = attachment.baseUrl + attachment.key;
         window.open(fullUrl, "_blank");
@@ -268,11 +273,29 @@ export default function BatchContentPage() {
                                 <VideoComponent
                                   key={topic._id}
                                   onClick={() => {
+                                    const attachment =
+                                      topic.homeworkIds?.[0]
+                                        ?.attachmentIds?.[0];
+
+                                    // If it's explicitly not a video lecture but has a document
+                                    if (
+                                      attachment &&
+                                      topic.isVideoLecture === false
+                                    ) {
+                                      window.open(
+                                        attachment.baseUrl + attachment.key,
+                                        "_blank"
+                                      );
+                                      return;
+                                    }
+
                                     console.log("Video clicked!");
                                     router.push(
-                                      `/watch?batchId=${batchId}&SubjectId=${subjectId}&ChildId=${topic._id
-                                      }&Type=${topic.urlType}&VideoUrl=${topic.videoDetails.videoUrl ??
-                                      topic.videoDetails.embedCode
+                                      `/watch?batchId=${batchId}&SubjectId=${subjectId}&ChildId=${
+                                        topic._id
+                                      }&Type=${topic.urlType}&VideoUrl=${
+                                        topic.videoDetails.videoUrl ??
+                                        topic.videoDetails.embedCode
                                       }&isLocked=${topic.isLocked}`
                                     );
                                   }}
