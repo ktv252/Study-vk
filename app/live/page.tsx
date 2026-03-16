@@ -145,5 +145,9 @@ export default function LivePage() {
     );
   }
 
-  return <HLSPlayer baseUrl={url} signedQuery={signedUrl} lectureTitle={lectureTitle} />;
+  return (
+    <div className="h-screen select-none relative bg-black">
+      <HLSPlayer baseUrl={url} signedQuery={signedUrl} lectureTitle={lectureTitle} />
+    </div>
+  );
 }
