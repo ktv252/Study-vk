@@ -177,12 +177,13 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
     initialSeekDone.current = false;
 
     const hls = new Hls({
-
       xhrSetup: (xhr, url) => {
         const sep = url.includes("?") ? "&" : "?";
         xhr.open("GET", `${url}${sep}${signedQuery.replace(/^\?/, "")}`, true);
       },
+      startPosition: 0,
     });
+
 
     hlsRef.current = hls;
     const initialSep = baseUrl.includes("?") ? "&" : "?";
@@ -202,18 +203,8 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
       video.play().catch(e => console.warn("Autoplay blocked:", e));
     });
 
-    hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
-      if (data.details.live && video && !initialSeekDone.current) {
-        if (data.details.fragments.length > 0) {
-          const startTime = data.details.fragments[0].start;
-          video.currentTime = startTime;
-          initialSeekDone.current = true;
-          console.log("Joined live: seeking to start position", startTime);
-        }
-      }
-    });
-
     hls.on(Hls.Events.ERROR, (event, data) => {
+
 
       console.error("HLS.js error:", data);
       if (data.fatal) {
