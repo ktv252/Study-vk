@@ -364,36 +364,51 @@ export default function Home() {
 
                   const handleClick = () => {
                     const { batchId, subjectId, _id: childId, urlType } = cls;
+                    const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
 
-                    if (
-                      urlType === "vimeo" ||
-                      (urlType === "awsVideo" && isBefore)
-                    ) {
+                    // 1. Handle Upcoming Classes
+                    if (isBefore) {
                       if (startTime > now) {
                         toast.error(
-                          `Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""
-                          }${minutesLeft}m`
+                          `Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`
                         );
                       } else {
-                        toast.error(
-                          "This class has not started yet. Try refreshing..."
-                        );
+                        toast.error("This class has not started yet. Try refreshing...");
                       }
-                    } else if (urlType === "penpencilvdo") {
+                      return;
+                    }
+
+                    // 2. Handle Documents (Notes/DPPs)
+                    const attachment = cls.homeworkIds?.[0]?.attachmentIds?.[0];
+                    if (attachment && (!urlType || urlType === "pdf" || urlType === "attachment")) {
+                      const fullUrl = attachment.baseUrl + attachment.key;
+                      window.open(fullUrl, "_blank");
+                      return;
+                    }
+
+                    // 3. Handle Videos
+                    if (urlType === "penpencilvdo") {
                       router.push(
-                        `/watch?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
+                        `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                       );
                     } else if (urlType === "awsVideo") {
                       if (isDuring) {
                         router.push(
-                          `/live?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=awsVideo`
+                          `/live?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=awsVideo`
                         );
-                      } else if (isAfter) {
-                        // FIX: Redirect to watch page for ended live classes
+                      } else {
+                        // Ended live classes redirect to watch page
                         router.push(
-                          `/watch?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
+                          `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                         );
                       }
+                    } else if (urlType === "vimeo") {
+                      router.push(
+                        `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=vimeo&isLocked=false`
+                      );
+                    } else if (!urlType && attachment) {
+                        // Fallback for documents that might have passed the condition above
+                        window.open(attachment.baseUrl + attachment.key, "_blank");
                     }
                   };
 
