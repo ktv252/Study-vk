@@ -226,7 +226,11 @@ const VideoPlayer: React.FC<Props> = ({
                   },
                   clearKeys: drmConfig.clearKeys,
                 },
+                streaming: {
+                  startAtLiveEdge: false,
+                },
               });
+
 
               if (signedUrlQuery) {
                 newPlayer
@@ -289,7 +293,11 @@ const VideoPlayer: React.FC<Props> = ({
             },
             clearKeys: drmConfig.clearKeys,
           },
+          streaming: {
+            startAtLiveEdge: false,
+          },
         });
+
       }
 
       if (signedUrlQuery) {

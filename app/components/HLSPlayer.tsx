@@ -35,6 +35,8 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
   const hlsRef = useRef<Hls | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const initialSeekDone = useRef(false);
+
 
   const LIVE_LATENCY = 5; // 5 seconds delay threshold
 
@@ -172,7 +174,10 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
     const video = videoRef.current;
     if (!video) return;
 
+    initialSeekDone.current = false;
+
     const hls = new Hls({
+
       xhrSetup: (xhr, url) => {
         const sep = url.includes("?") ? "&" : "?";
         xhr.open("GET", `${url}${sep}${signedQuery.replace(/^\?/, "")}`, true);
@@ -197,7 +202,19 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectur
       video.play().catch(e => console.warn("Autoplay blocked:", e));
     });
 
+    hls.on(Hls.Events.LEVEL_LOADED, (event, data) => {
+      if (data.details.live && video && !initialSeekDone.current) {
+        if (data.details.fragments.length > 0) {
+          const startTime = data.details.fragments[0].start;
+          video.currentTime = startTime;
+          initialSeekDone.current = true;
+          console.log("Joined live: seeking to start position", startTime);
+        }
+      }
+    });
+
     hls.on(Hls.Events.ERROR, (event, data) => {
+
       console.error("HLS.js error:", data);
       if (data.fatal) {
         switch (data.type) {
