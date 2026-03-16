@@ -131,14 +131,15 @@ export default function Home() {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter live classes, videos, and standalone documents
+      // ✅ Filter all live or video classes
       const videoSchedule = scheduleData.filter(
         (item: any) =>
           item.isVideoLecture === true ||
           item.isLive === true ||
-          ["awsVideo", "vimeo", "penpencilvdo", "youtube", "pdf", "attachment"].includes(item.urlType) ||
-          item.tag?.toUpperCase() === "LIVE" ||
-          (item.homeworkIds && item.homeworkIds.length > 0)
+          item.urlType === "awsVideo" ||
+          item.urlType === "vimeo" ||
+          item.urlType === "penpencilvdo" ||
+          item.tag?.toUpperCase() === "LIVE"
       );
 
       // Step 2: Extract all unique teacher IDs
@@ -362,52 +363,37 @@ export default function Home() {
                   );
 
                   const handleClick = () => {
-                    const { batchId, subjectId, _id: childId, urlType, isVideoLecture } = cls;
-                    const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
-                    const attachment = cls.homeworkIds?.[0]?.attachmentIds?.[0];
+                    const { batchId, subjectId, _id: childId, urlType } = cls;
 
-                    // 1. Handle Standalone Documents first (if not a video lecture)
-                    if (attachment && (isVideoLecture === false || urlType === "pdf" || urlType === "attachment" || !urlType)) {
-                      const fullUrl = attachment.baseUrl + attachment.key;
-                      window.open(fullUrl, "_blank");
-                      return;
-                    }
-
-                    // 2. Handle Upcoming Classes (Toasts only)
-                    if (isBefore) {
+                    if (
+                      urlType === "vimeo" ||
+                      (urlType === "awsVideo" && isBefore)
+                    ) {
                       if (startTime > now) {
                         toast.error(
-                          `Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`
+                          `Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""
+                          }${minutesLeft}m`
                         );
                       } else {
-                        toast.error("This class has not started yet. Try refreshing...");
+                        toast.error(
+                          "This class has not started yet. Try refreshing..."
+                        );
                       }
-                      return;
-                    }
-
-                    // 3. Handle Videos (Watch/Live Page)
-                    if (urlType === "penpencilvdo") {
+                    } else if (urlType === "penpencilvdo") {
                       router.push(
-                        `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
+                        `/watch?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                       );
                     } else if (urlType === "awsVideo") {
                       if (isDuring) {
                         router.push(
-                          `/live?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=awsVideo`
+                          `/live?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=awsVideo`
                         );
-                      } else {
-                        // Ended classes redirect to watch page
+                      } else if (isAfter) {
+                        // FIX: Redirect to watch page for ended live classes
                         router.push(
-                          `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
+                          `/watch?batchId=${batchId}&SubjectId=${subjectId?._id}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                         );
                       }
-                    } else if (urlType === "vimeo") {
-                      router.push(
-                        `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=vimeo&isLocked=false`
-                      );
-                    } else if (attachment) {
-                        // Fallback: If it has an attachment but no matched video type, open document
-                        window.open(attachment.baseUrl + attachment.key, "_blank");
                     }
                   };
 

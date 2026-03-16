@@ -617,10 +617,6 @@ const VideoPlayer: React.FC<Props> = ({
                       <div
                         className="con border p-4 rounded-md shadow-xs cursor-pointer hover:bg-gray-50 transition"
                         onClick={() => {
-                          if (!Attachment?.key || Attachment.key === "/" || !Attachment?.baseUrl) {
-                            alert("Invalid attachment key or base URL. Cannot open file.");
-                            return;
-                          }
                           const link = document.createElement("a");
                           link.href = `${Attachment.baseUrl}${Attachment.key}`;
                           link.download = Attachment.name;

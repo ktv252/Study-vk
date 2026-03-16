@@ -108,13 +108,6 @@ export default function HomePage() {
 
           // Step 2: Fetch MPD and extract default_KID
           const mpdRes = await fetch(fullMPDUrl);
-          if (!mpdRes.ok) {
-            const errorText = await mpdRes.text();
-            if (errorText.includes("AccessDenied")) {
-              throw new Error("Access Denied: The video storage server (GCS) is rejecting the request. This usually means the signed link has expired or the server is misconfigured.");
-            }
-            throw new Error(`Failed to fetch video manifest: ${mpdRes.status} ${mpdRes.statusText}`);
-          }
           const mpdText = await mpdRes.text();
 
           const parser = new DOMParser();
@@ -198,7 +191,7 @@ export default function HomePage() {
       try {
         const res = await fetch("/api/xp/update", { method: "POST" });
         const data = await res.json();
-        
+
         if (data.success && data.xp !== undefined) {
           // Update local storage so Header can pick it up
           const storedUser = localStorage.getItem("USER_DATA");
@@ -229,8 +222,8 @@ export default function HomePage() {
         {loading && <div className="text-center p-4">Loading video...</div>}
 
         {!loading && videoType === "youtube" && videoUrl && (
-          <YouTubePlayer 
-            videoId={extractYouTubeVideoId(videoUrl)} 
+          <YouTubePlayer
+            videoId={extractYouTubeVideoId(videoUrl)}
             lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />
@@ -247,10 +240,9 @@ export default function HomePage() {
             onPlayStateChange={setIsPlayerPlaying}
           />
         ) : !loading && videoType === "hls" && videoUrl ? (
-          <HLSPlayer 
-            baseUrl={videoUrl} 
-            signedQuery={signedUrlQuery} 
-            Attachment={Attachment || undefined}
+          <HLSPlayer
+            baseUrl={videoUrl}
+            signedQuery={signedUrlQuery}
             lectureTitle={lectureTitle}
             onPlayStateChange={setIsPlayerPlaying}
           />

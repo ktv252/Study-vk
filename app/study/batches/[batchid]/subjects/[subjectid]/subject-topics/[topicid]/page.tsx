@@ -45,18 +45,22 @@ export default function BatchContentPage() {
 
   const handleOpen = async (attachment: any, pdfId: any) => {
     try {
-      if (!attachment?.key || attachment.key === "/" || !attachment?.baseUrl) {
-        toast.error("Invalid attachment data. Key or BaseURL missing.");
-        return;
-      }
-
       if (attachment?.key && attachment?.baseUrl) {
         const fullUrl = attachment.baseUrl + attachment.key;
-        window.open(fullUrl, "_blank");
-        return;
+
+        try {
+          const headRes = await fetch(fullUrl, { method: "HEAD" });
+
+          if (headRes.ok) {
+            window.open(fullUrl, "_blank");
+            return;
+          }
+        } catch (err) {
+          console.warn("HEAD check failed for attachment:", err);
+        }
       }
 
-      // If we don't have enough info in attachment, use toast.promise to fetch more info
+      // Use toast.promise to handle loading/success/error UI feedback
       await toast.promise(
         (async () => {
           const result = await GetPdf(batchId, subjectId, pdfId);
@@ -66,7 +70,14 @@ export default function BatchContentPage() {
 
           if (key && baseUrl) {
             const fullUrl = baseUrl + key;
-            window.open(fullUrl, "_blank");
+
+            const headRes = await fetch(fullUrl, { method: "HEAD" });
+
+            if (headRes.ok) {
+              window.open(fullUrl, "_blank");
+            } else {
+              throw new Error("PDF exists but couldn't be opened.");
+            }
           } else {
             throw new Error("PDF not available or could not be generated.");
           }
@@ -273,29 +284,11 @@ export default function BatchContentPage() {
                                 <VideoComponent
                                   key={topic._id}
                                   onClick={() => {
-                                    const attachment =
-                                      topic.homeworkIds?.[0]
-                                        ?.attachmentIds?.[0];
-
-                                    // If it's explicitly not a video lecture but has a document
-                                    if (
-                                      attachment &&
-                                      topic.isVideoLecture === false
-                                    ) {
-                                      window.open(
-                                        attachment.baseUrl + attachment.key,
-                                        "_blank"
-                                      );
-                                      return;
-                                    }
-
                                     console.log("Video clicked!");
                                     router.push(
-                                      `/watch?batchId=${batchId}&SubjectId=${subjectId}&ChildId=${
-                                        topic._id
-                                      }&Type=${topic.urlType}&VideoUrl=${
-                                        topic.videoDetails.videoUrl ??
-                                        topic.videoDetails.embedCode
+                                      `/watch?batchId=${batchId}&SubjectId=${subjectId}&ChildId=${topic._id
+                                      }&Type=${topic.urlType}&VideoUrl=${topic.videoDetails.videoUrl ??
+                                      topic.videoDetails.embedCode
                                       }&isLocked=${topic.isLocked}`
                                     );
                                   }}

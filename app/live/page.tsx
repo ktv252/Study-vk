@@ -15,7 +15,6 @@ export default function LivePage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [verificationUrl, setVerificationUrl] = useState<string | null>(null);
   const [lectureTitle, setLectureTitle] = useState<string>("");
-  const [attachment, setAttachment] = useState<any>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,17 +67,9 @@ export default function LivePage() {
           if (scheduleData?.success && scheduleData?.data) {
             setLectureTitle(
               scheduleData.data.topic ||
-                scheduleData.data.videoDetails?.name ||
-                ""
+              scheduleData.data.videoDetails?.name ||
+              ""
             );
-            
-            const homeworkIds = scheduleData?.data?.homeworkIds?.[0];
-            if (homeworkIds?.attachmentIds?.length > 0) {
-              const attach = homeworkIds.attachmentIds[0];
-              if (attach?.baseUrl && attach?.key) {
-                setAttachment(attach);
-              }
-            }
           }
         } catch (scheduleErr) {
           console.error("Failed to fetch schedule for title:", scheduleErr);
@@ -154,5 +145,5 @@ export default function LivePage() {
     );
   }
 
-  return <HLSPlayer baseUrl={url} signedQuery={signedUrl} Attachment={attachment} lectureTitle={lectureTitle} />;
+  return <HLSPlayer baseUrl={url} signedQuery={signedUrl} lectureTitle={lectureTitle} />;
 }

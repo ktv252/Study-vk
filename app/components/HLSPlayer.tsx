@@ -26,12 +26,12 @@ type Quality = {
 type Props = {
   baseUrl: string;
   signedQuery: string;
-  Attachment?: any; // Change from attachment?: string
+  attachment?: string;
   lectureTitle?: string;
   onPlayStateChange?: (isPlaying: boolean) => void;
 };
 
-const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, Attachment, lectureTitle, onPlayStateChange }) => {
+const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, attachment, lectureTitle, onPlayStateChange }) => {
   const hlsRef = useRef<Hls | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -60,7 +60,6 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, Attachment, lectur
   const [selectedQuality, setSelectedQuality] = useState<"auto" | number>(
     "auto"
   );
-  const [showAttachment, setShowAttachment] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
 
   const [bufferedTime, setBufferedTime] = useState(0); // Buffered time
@@ -194,7 +193,7 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, Attachment, lectur
       }));
       setAvailableQualities(qualities);
       setSelectedQuality("auto");
-      
+
       video.play().catch(e => console.warn("Autoplay blocked:", e));
     });
 
@@ -421,7 +420,6 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, Attachment, lectur
         !popupRef.current.contains(event.target as Node)
       ) {
         setShowMenu(false);
-        setShowAttachment(false);
         setShowSettings(false);
         setShowSpeedSelector(false);
         setShowQualitySelector(false);
@@ -449,77 +447,6 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, Attachment, lectur
       style={{ touchAction: "manipulation" }}
       className="relative h-full w-full select-none"
     >
-      {showAttachment && (
-        <div className="fixed inset-0 z-[1001] flex items-center justify-center overflow-hidden scrollbar-hide bg-black/30">
-          <div
-            ref={popupRef}
-            className="animate-fadeIn relative w-full transform overflow-hidden rounded-lg text-left shadow-xl bg-white text-black transition-all
-         sm:max-w-[510px] md:portrait:max-w-[480px] lg:landscape:max-w-[610px]"
-          >
-            <div className="max-h-[80vh] overflow-auto">
-              <div className="flex flex-wrap w-full">
-                <div className="heading flex flex-row justify-between w-full border p-4">
-                  <div className="h2 font-semibold text-lg">Attachments</div>
-                  <div
-                    onClick={() => {
-                      setShowAttachment(false);
-                      setShowMenu(false);
-                    }}
-                    className="X cursor-pointer"
-                  >
-                    {" "}
-                    <X
-                      size={20}
-                      strokeWidth={2}
-                    />
-                  </div>
-                </div>
-                <div className="notes w-full pb-3">
-                  <div className="p-3 md:p-5 lg:p-5">
-                    <div className="he pb-3 font-medium">Notes</div>
-                    {Attachment && (
-                      <div
-                        className="con border p-4 rounded-md shadow-xs cursor-pointer hover:bg-gray-50 transition"
-                        onClick={() => {
-                          if (!Attachment?.key || Attachment.key === "/" || !Attachment?.baseUrl) {
-                            alert("Invalid attachment key or base URL. Cannot open file.");
-                            return;
-                          }
-                          const link = document.createElement("a");
-                          link.href = `${Attachment.baseUrl}${Attachment.key}`;
-                          link.download = Attachment.name;
-                          link.target = "_blank";
-                          link.rel = "noopener noreferrer";
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }}
-                      >
-                        <div className="pd flex flex-row justify-between items-center">
-                          <FileText
-                            size={20}
-                            strokeWidth={1}
-                          />
-
-                          <div className="he px-1 text-xs text-gray-800 w-full">
-                            {Attachment.name}
-                          </div>
-
-                          <Download
-                            size={20}
-                            strokeWidth={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div id="player-animation"></div>
 
       <div
@@ -561,22 +488,6 @@ const VideoPlayer: React.FC<Props> = ({ baseUrl, signedQuery, Attachment, lectur
                 className="z-[1000] absolute flex justify-end  items-start min-w-full top-[60px] right-[28px]"
               >
                 <div className="bg-[#1B2124] flex flex-col  rounded-md w-[200px] p-3">
-                  <div
-                    onClick={() => setShowAttachment((prev) => !prev)}
-                    className="flex items-center cursor-pointer w-full p-2.5 gap-2.5"
-                  >
-                    <div className="w-6 h-6">
-                      <Paperclip
-                        size={20}
-                        strokeWidth={2}
-                      />
-                    </div>
-                    <div className=" w-full">
-                      <div className="Typography_root__HsO0C font-semibold Typography_subHeading__v4fFR">
-                        <span className="text-white">Attachment</span>
-                      </div>
-                    </div>
-                  </div>
                   <div
                     onClick={() => window.location.reload()}
                     className="flex items-center cursor-pointer w-full p-2.5 gap-2.5"
