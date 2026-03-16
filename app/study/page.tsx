@@ -310,42 +310,64 @@ export default function Home() {
                   const handleClick = () => {
                     const { batchId, subjectId, _id: childId, urlType, isVideoLecture } = cls;
                     const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
-                    const attachment = (cls.attachments && cls.attachments[0]) || (cls.homeworkIds && cls.homeworkIds[0]?.attachmentIds?.[0]);
+                    
+                    // Comprehensive attachment extraction
+                    const attachment = cls.attachments?.[0] || 
+                                       cls.homeworkIds?.[0]?.attachmentIds?.[0] || 
+                                       cls.attachmentData || 
+                                       (cls.urlType === "pdf" ? { baseUrl: "", key: cls.url } : null);
 
-                    // 1. Prioritize PDF/Document Logic
-                    // We open the PDF if:
-                    // a) It's explicitly a doc type OR isVideoLecture is false
-                    // b) The video hasn't started yet (isBefore) but an attachment exists
-                    const isExplicitDoc = ["pdf", "attachment"].includes(urlType) || isVideoLecture === false;
-                    const canOpenEarlyDoc = isBefore && attachment;
+                    const isVideo = ["awsVideo", "vimeo", "penpencilvdo", "youtube"].includes(urlType) || isVideoLecture === true;
+                    
+                    // Determine if the video is currently "Ready to Play"
+                    const isVideoReady = (urlType === "penpencilvdo") || 
+                                         (urlType === "awsVideo" && (isDuring || isAfter)) ||
+                                         (urlType === "vimeo" && (isDuring || isAfter)) ||
+                                         (urlType === "youtube" && (isDuring || isAfter));
 
-                    if (attachment && (isExplicitDoc || canOpenEarlyDoc)) {
-                        const baseUrl = attachment.baseUrl;
-                        const key = attachment.key;
-                        if (baseUrl && key) {
-                            window.open(baseUrl + key, "_blank");
-                            return;
+                    // 1. If we have an attachment, open it if:
+                    // - It's not a video class
+                    // - OR it is a video class but the video is not ready yet (e.g. upcoming)
+                    // - OR it's explicitly tagged as a PDF/Attachment
+                    if (attachment && (attachment.baseUrl || attachment.key || attachment.url)) {
+                        const isExplicitDoc = ["pdf", "attachment"].includes(urlType) || isVideoLecture === false;
+                        const shouldOpenDoc = isExplicitDoc || !isVideoReady;
+
+                        if (shouldOpenDoc) {
+                            const fullUrl = attachment.url || (attachment.baseUrl + attachment.key);
+                            if (fullUrl && fullUrl !== "undefined") {
+                                window.open(fullUrl, "_blank");
+                                return;
+                            }
                         }
                     }
 
                     // 2. Video Playback Logic
-                    if (urlType === "vimeo" || (urlType === "awsVideo" && isBefore)) {
-                      if (startTime && startTime > now) {
-                        toast.error(`Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
-                      } else {
-                        toast.error("This class has not started yet. Try refreshing...");
-                      }
-                    } else if (urlType === "penpencilvdo") {
-                      router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
+                    if (urlType === "vimeo") {
+                        if (isBefore) {
+                            toast.error(`Upcoming class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
+                        } else {
+                            router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=vimeo&isLocked=false`);
+                        }
                     } else if (urlType === "awsVideo") {
                       if (isDuring) {
                         router.push(`/live?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=awsVideo`);
                       } else if (isAfter) {
                         router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
+                      } else {
+                        // isBefore
+                        toast.error(`Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
                       }
-                    } else if (attachment) {
-                        // Final fallback for items with no video flow but have attachments
-                        window.open((attachment.baseUrl || "") + (attachment.key || ""), "_blank");
+                    } else if (urlType === "penpencilvdo") {
+                      router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
+                    } else {
+                        // Final fallback for anything with an attachment
+                        if (attachment) {
+                            const fullUrl = attachment.url || (attachment.baseUrl + attachment.key);
+                            window.open(fullUrl, "_blank");
+                        } else {
+                            toast.error(isBefore ? "This class has not started yet." : "Content not available.");
+                        }
                     }
                   };
 
