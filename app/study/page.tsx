@@ -131,15 +131,14 @@ export default function Home() {
       const scheduleRes = await getTodaysSchedule(batchId);
       const scheduleData = scheduleRes.data || [];
 
-      // ✅ Filter all live or video classes
+      // ✅ Filter live classes, videos, and standalone documents
       const videoSchedule = scheduleData.filter(
         (item: any) =>
           item.isVideoLecture === true ||
           item.isLive === true ||
-          item.urlType === "awsVideo" ||
-          item.urlType === "vimeo" ||
-          item.urlType === "penpencilvdo" ||
-          item.tag?.toUpperCase() === "LIVE"
+          ["awsVideo", "vimeo", "penpencilvdo", "youtube", "pdf", "attachment"].includes(item.urlType) ||
+          item.tag?.toUpperCase() === "LIVE" ||
+          (item.homeworkIds && item.homeworkIds.length > 0)
       );
 
       // Step 2: Extract all unique teacher IDs
@@ -363,10 +362,18 @@ export default function Home() {
                   );
 
                   const handleClick = () => {
-                    const { batchId, subjectId, _id: childId, urlType } = cls;
+                    const { batchId, subjectId, _id: childId, urlType, isVideoLecture } = cls;
                     const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
+                    const attachment = cls.homeworkIds?.[0]?.attachmentIds?.[0];
 
-                    // 1. Handle Upcoming Classes
+                    // 1. Handle Standalone Documents first (if not a video lecture)
+                    if (attachment && (isVideoLecture === false || urlType === "pdf" || urlType === "attachment" || !urlType)) {
+                      const fullUrl = attachment.baseUrl + attachment.key;
+                      window.open(fullUrl, "_blank");
+                      return;
+                    }
+
+                    // 2. Handle Upcoming Classes (Toasts only)
                     if (isBefore) {
                       if (startTime > now) {
                         toast.error(
@@ -378,15 +385,7 @@ export default function Home() {
                       return;
                     }
 
-                    // 2. Handle Documents (Notes/DPPs)
-                    const attachment = cls.homeworkIds?.[0]?.attachmentIds?.[0];
-                    if (attachment && (!urlType || urlType === "pdf" || urlType === "attachment")) {
-                      const fullUrl = attachment.baseUrl + attachment.key;
-                      window.open(fullUrl, "_blank");
-                      return;
-                    }
-
-                    // 3. Handle Videos
+                    // 3. Handle Videos (Watch/Live Page)
                     if (urlType === "penpencilvdo") {
                       router.push(
                         `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
@@ -397,7 +396,7 @@ export default function Home() {
                           `/live?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=awsVideo`
                         );
                       } else {
-                        // Ended live classes redirect to watch page
+                        // Ended classes redirect to watch page
                         router.push(
                           `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`
                         );
@@ -406,8 +405,8 @@ export default function Home() {
                       router.push(
                         `/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=vimeo&isLocked=false`
                       );
-                    } else if (!urlType && attachment) {
-                        // Fallback for documents that might have passed the condition above
+                    } else if (attachment) {
+                        // Fallback: If it has an attachment but no matched video type, open document
                         window.open(attachment.baseUrl + attachment.key, "_blank");
                     }
                   };
