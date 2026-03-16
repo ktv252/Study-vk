@@ -188,13 +188,6 @@ const VideoPlayer: React.FC<Props> = ({
       const player = new shaka.Player(video);
       playerRef.current = player;
 
-      player.configure({
-        streaming: {
-          startAtLiveEdge: false,
-        },
-      });
-
-
       // player.addEventListener("error", (event: any) => {
       //   const error = event.detail;
       //   if (error.code === 7002) {
