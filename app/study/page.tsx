@@ -307,15 +307,20 @@ export default function Home() {
 
                   const hoursLeft = startTime ? Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60 * 60)) : 0;
                   const minutesLeft = startTime ? Math.floor(((startTime.getTime() - now.getTime()) / (1000 * 60)) % 60) : 0;
-
                   const handleClick = () => {
                     const { batchId, subjectId, _id: childId, urlType, isVideoLecture } = cls;
                     const subjectIdStr = typeof subjectId === "string" ? subjectId : subjectId?._id;
                     const attachment = (cls.attachments && cls.attachments[0]) || (cls.homeworkIds && cls.homeworkIds[0]?.attachmentIds?.[0]);
 
-                    // 1. Handle Documents (PDFs)
-                    if (attachment && (isVideoLecture === false || ["pdf", "attachment"].includes(urlType) || !urlType)) {
-                        const baseUrl = attachment.baseUrl || attachment.baseUrl; // fallback logic if needed
+                    // 1. Prioritize PDF/Document Logic
+                    // We open the PDF if:
+                    // a) It's explicitly a doc type OR isVideoLecture is false
+                    // b) The video hasn't started yet (isBefore) but an attachment exists
+                    const isExplicitDoc = ["pdf", "attachment"].includes(urlType) || isVideoLecture === false;
+                    const canOpenEarlyDoc = isBefore && attachment;
+
+                    if (attachment && (isExplicitDoc || canOpenEarlyDoc)) {
+                        const baseUrl = attachment.baseUrl;
                         const key = attachment.key;
                         if (baseUrl && key) {
                             window.open(baseUrl + key, "_blank");
@@ -323,7 +328,7 @@ export default function Home() {
                         }
                     }
 
-                    // 2. Handle Videos
+                    // 2. Video Playback Logic
                     if (urlType === "vimeo" || (urlType === "awsVideo" && isBefore)) {
                       if (startTime && startTime > now) {
                         toast.error(`Upcoming live class in ${hoursLeft > 0 ? `${hoursLeft}h ` : ""}${minutesLeft}m`);
@@ -339,7 +344,7 @@ export default function Home() {
                         router.push(`/watch?batchId=${batchId}&SubjectId=${subjectIdStr}&ChildId=${childId}&Type=penpencilvdo&isLocked=false`);
                       }
                     } else if (attachment) {
-                        // Final fallback for anything with an attachment but no video flow
+                        // Final fallback for items with no video flow but have attachments
                         window.open((attachment.baseUrl || "") + (attachment.key || ""), "_blank");
                     }
                   };
