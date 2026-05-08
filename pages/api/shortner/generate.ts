@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json({ verified: true, message: "Already verified" });
     }
 
-    const servers = config.shortner_servers.filter(s => s.enabled);
+    const servers = config.shortner_servers.filter((s: { enabled: boolean }) => s.enabled);
     if (servers.length === 0) {
         return res.status(200).json({ verified: true, message: "No shortener servers available" });
     }

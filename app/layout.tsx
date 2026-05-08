@@ -1,6 +1,5 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import NetworkStatus from '@/components/NetworkStatus';
@@ -9,7 +8,6 @@ import RootInitializer from "@/app/components/RootInitializer";
 import TriggerCleanup from "@/app/TriggerCleanup";
 import { getDirectServerInfo } from "@/lib/config";
 
-const inter = Inter({ subsets: ["latin"] });
 
 // Server-side function to fetch server info
 async function getServerInfo() {
@@ -45,7 +43,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 antialiased`}>
+      <body className="min-h-screen bg-[#020202] text-white selection:bg-purple-500/30 antialiased">
         {/* Global UI background pattern */}
         <div className="fixed inset-0 z-[-1] pointer-events-none opacity-50">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:20px_20px]" />

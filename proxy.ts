@@ -1,9 +1,9 @@
-// middleware.ts
+// proxy.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const REFRESH_API_PATH = "/api/TokenManager/refreshTokens";
+const REFRESH_API_PATH = "/api/BatchManager/refreshTokens";
 const REFRESH_API_KEY = process.env.REFRESH_API_KEY;
 const PUBLIC_API_PATHS = ["/api/auth"];
 const ADMIN_API_PATHS = ["/api/admin"];
@@ -55,7 +55,7 @@ async function getOrSetAnonId(req: NextRequest, res?: NextResponse) {
   return anon_id;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
   const adminToken = req.cookies.get("admin_token")?.value;

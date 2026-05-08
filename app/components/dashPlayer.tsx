@@ -33,6 +33,28 @@ type Quality = {
   bandwidth: number;
   label: string;
 };
+
+function getQualityOptions(tracks: shaka.extern.Track[]): Quality[] {
+  const qualities = Array.from(
+    new Map(
+      tracks
+        .filter((track): track is shaka.extern.Track & { height: number } =>
+          typeof track.height === "number"
+        )
+        .map((track) => [
+          track.height,
+          {
+            id: track.id,
+            height: track.height,
+            bandwidth: track.bandwidth,
+            label: `${track.height}p`,
+          },
+        ])
+    ).values()
+  );
+
+  return qualities.sort((a, b) => a.height - b.height);
+}
 const VideoPlayer: React.FC<Props> = ({
   src,
   type,
@@ -229,9 +251,8 @@ const VideoPlayer: React.FC<Props> = ({
               });
 
               if (signedUrlQuery) {
-                newPlayer
-                  .getNetworkingEngine()
-                  .registerRequestFilter(
+                const networkingEngine = newPlayer.getNetworkingEngine();
+                networkingEngine?.registerRequestFilter(
                     (requestType: number, request: shaka.extern.Request) => {
                       if (
                         requestType ===
@@ -253,27 +274,11 @@ const VideoPlayer: React.FC<Props> = ({
               }
 
               await newPlayer.load(src, 0, "application/dash+xml");
-              setDuration(video.duration || newPlayer.duration());
+              if (!isNaN(video.duration) && video.duration > 0) {
+                setDuration(video.duration);
+              }
 
-              const tracks = newPlayer.getVariantTracks();
-              const qualities = Array.from(
-                new Map(
-                  tracks
-                    .filter((t) => t.height)
-                    .map((t) => [
-                      t.height,
-                      {
-                        id: t.id,
-                        height: t.height,
-                        bandwidth: t.bandwidth,
-                        label: `${t.height}p`,
-                      },
-                    ])
-                ).values()
-              );
-
-              qualities.sort((a, b) => a.height - b.height);
-              setAvailableQualities(qualities);
+              setAvailableQualities(getQualityOptions(newPlayer.getVariantTracks()));
             } catch (retryError) {
               console.error("ClearKey fallback failed:", retryError);
             }
@@ -293,9 +298,8 @@ const VideoPlayer: React.FC<Props> = ({
       }
 
       if (signedUrlQuery) {
-        player
-          .getNetworkingEngine()
-          .registerRequestFilter(
+        const networkingEngine = player.getNetworkingEngine();
+        networkingEngine?.registerRequestFilter(
             (requestType: number, request: shaka.extern.Request) => {
               if (
                 requestType === shaka.net.NetworkingEngine.RequestType.LICENSE
@@ -317,32 +321,11 @@ const VideoPlayer: React.FC<Props> = ({
       player
         .load(src, 0, "application/dash+xml")
         .then(() => {
-          const durationToSet =
-            !isNaN(video.duration) && video.duration > 0
-              ? video.duration
-              : player.duration();
+          if (!isNaN(video.duration) && video.duration > 0) {
+            setDuration(video.duration);
+          }
 
-          if (!isNaN(durationToSet)) setDuration(durationToSet);
-
-          const tracks = player.getVariantTracks();
-          const qualities = Array.from(
-            new Map(
-              tracks
-                .filter((t) => t.height)
-                .map((t) => [
-                  t.height,
-                  {
-                    id: t.id,
-                    height: t.height,
-                    bandwidth: t.bandwidth,
-                    label: `${t.height}p`,
-                  },
-                ])
-            ).values()
-          );
-
-          qualities.sort((a, b) => a.height - b.height);
-          setAvailableQualities(qualities);
+          setAvailableQualities(getQualityOptions(player.getVariantTracks()));
         })
         .catch((err) => {
           console.error("Error loading video:", err);
@@ -509,7 +492,7 @@ const VideoPlayer: React.FC<Props> = ({
     } else {
       const tracks = player.getVariantTracks();
       const selectedTrack = tracks.find(
-        (track: shaka.extern.VariantTrack) => track.id === target
+        (track: shaka.extern.Track) => track.id === target
       );
 
       if (selectedTrack) {

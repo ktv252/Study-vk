@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start -p 4000 -H 0.0.0.0",
     "bot": "tsx scripts/bot.ts",
-    "lint": "next lint",
+    "lint": "tsc --noEmit",
     "both": "concurrently \"npm run dev\" \"npm run bot\""
   },
   "dependencies": {
