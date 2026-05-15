@@ -44,8 +44,7 @@ async function getOtpKey(kid: string): Promise<string> {
   const otpUrl = `https://api.penpencil.xyz/v1/videos/get-otp?key=${encodedHex}&isEncoded=true`;
 
   const res = await httpx(otpUrl, { headers });
-  const data = await res.json();
-
+  const data = (await res.json()) as any;
   if (!data?.data?.otp) throw new Error("OTP not found");
   return decodeOtpKey(data.data.otp, PENPENCIL_TOKEN);
 }

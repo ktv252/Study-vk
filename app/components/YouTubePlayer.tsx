@@ -53,9 +53,9 @@ export default function YouTubePlayer({ videoId, title }: Props) {
   const [showQualitySelector, setShowQualitySelector] = useState(false);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const [availableQualities, setAvailableQualities] = useState<
-    { id: number; height: number; bandwidth: number }[]
+    { id: string; label: string }[]
   >([]);
-  const [selectedQuality, setSelectedQuality] = useState<"auto" | number>(
+  const [selectedQuality, setSelectedQuality] = useState<"auto" | string>(
     "auto"
   );
   //   const [bufferedTime, setBufferedTime] = useState(0); // Buffered time state
@@ -163,7 +163,7 @@ useEffect(() => {
     };
   }, [playerRef.current]);
 
-  const handleStateChange = (event) => {
+  const handleStateChange = (event: any) => {
     if (
       (event.data === 1 || event.data === 3) &&
       !hasFetchedQualities.current
@@ -1022,7 +1022,7 @@ useEffect(() => {
                   showinfo: 0, // deprecated but safe to include
                 },
               }}
-              onReady={(event) => {
+              onReady={(event: any) => {
                 playerRef.current = event.target;
                 // You can optionally get qualities right here or in onStateChange
               }}

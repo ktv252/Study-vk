@@ -43,7 +43,7 @@ export default async function handler(
     //   https://api.penpencil.co/v1/batches/676e4dee1ec923bc192f38c9/subject/c-865224/schedule/684845e3ce9a26973819ddd9/schedule-details
 
     const response = await axios.get(url, {
-      headers: getHeaders(ActualToken),
+      headers: getHeaders(ActualToken ?? ""),
     });
 
     const data = response.data?.data;

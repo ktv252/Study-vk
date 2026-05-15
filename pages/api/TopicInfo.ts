@@ -47,7 +47,7 @@ export default async function handler(
       `/v2/batches/${batchIdStr}/subject/${subjectIdStr}/contents?tag=${topicIdStr}&contentType=${contentTypeStr}&page=${pageNumber}`;
 
     const response = await axios.get(url, {
-      headers: getHeaders(ActualToken),
+      headers: getHeaders(ActualToken ?? ""),
     });
 
     return res.status(200).json({

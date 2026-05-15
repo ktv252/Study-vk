@@ -44,7 +44,7 @@ const findQuestionList = (value: any): any[] | null => {
   return null;
 };
 
-const looksLikeId = (value: unknown) =>
+const looksLikeId = (value: unknown): value is string =>
   typeof value === "string" && /^[a-zA-Z0-9_-]{8,}$/.test(value);
 
 const collectQuizIds = (value: any, ids = new Set<string>()) => {
@@ -139,7 +139,7 @@ export default async function handler(
 ) {
   try {
     const user = await authenticateUser(req, res);
-    const actualToken = user.ActualToken;
+    const actualToken = user.ActualToken ?? "";
     const PW_API = process.env.PW_API;
 
     const batchId = asString(req.query.BatchId);
@@ -197,7 +197,7 @@ export default async function handler(
       }
     }
 
-    const candidateUrls = [...discoveredIds].flatMap((id) => getQuizUrls(PW_API, id));
+    const candidateUrls = [...discoveredIds].flatMap((id) => getQuizUrls(PW_API!, id));
 
     for (const url of candidateUrls) {
       try {
