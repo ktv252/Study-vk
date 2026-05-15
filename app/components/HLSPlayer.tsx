@@ -385,12 +385,12 @@ const VideoPlayer: React.FC<Props> = ({
 
   // Compute progress bar values using stream start time (not user join time)
   const seekStart =
-    videoRef.current?.seekable?.length > 0
-      ? videoRef.current.seekable.start(0)
+    (videoRef.current?.seekable?.length || 0) > 0
+      ? videoRef.current!.seekable.start(0)
       : 0;
   const seekEnd =
-    videoRef.current?.seekable?.length > 0
-      ? videoRef.current.seekable.end(0)
+    (videoRef.current?.seekable?.length || 0) > 0
+      ? videoRef.current!.seekable.end(0)
       : 0;
   const seekRange = seekEnd - seekStart;
 

@@ -56,10 +56,10 @@ function decryptToken(token: string, secret: string): any {
 export default async function VerifyPage({
   searchParams,
 }: {
-  searchParams?: { [key: string]: string };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const params = searchParams || {};
-  const rawToken = searchParams?.token;
+  const resolvedSearchParams = await searchParams;
+  const rawToken = resolvedSearchParams.token as string | undefined;
   if (!rawToken) {
     redirect("/study/batches?toast=Missing%20Token");
   }

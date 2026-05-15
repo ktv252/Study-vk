@@ -8,7 +8,7 @@ export function normalizePhoneNumber(rawPhone: string, defaultCountry = "IN"): s
     phoneInput = "+" + phoneInput;
   }
 
-  const phoneNumberObj = parsePhoneNumberFromString(phoneInput, defaultCountry);
+  const phoneNumberObj = parsePhoneNumberFromString(phoneInput, defaultCountry as any);
 
   if (!phoneNumberObj || !phoneNumberObj.isValid()) {
     throw new Error("Invalid phone number");

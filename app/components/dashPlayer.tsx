@@ -49,7 +49,7 @@ const VideoPlayer: React.FC<Props> = ({
 }) => {
   // const contentType = "application/dash+xml";
   const videoRef = useRef<HTMLVideoElement>(null);
-  const playerRef = useRef<shaka.Player | null>(null);
+  const playerRef = useRef<any>(null);
 
   const router = useRouter();
   const speeds = [0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
@@ -182,7 +182,7 @@ useEffect(() => {
 
     // Delay to allow video element to fully reset
     const shakaInitTimeout = setTimeout(() => {
-      const player = new shaka.Player(video);
+      const player = new (shaka as any).Player(video);
       playerRef.current = player;
 
       // Bug fix: declare fallbackApplied in scope before using it
@@ -195,8 +195,8 @@ useEffect(() => {
         // Fallback if license request failed and clearkey config wasn't applied yet
         if (
           error.code ===
-            shaka.util.Error.Code.REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE ||
-          error.code === shaka.util.Error.Code.LICENSE_REQUEST_FAILED
+            (shaka as any).util.Error.Code.REQUESTED_KEY_SYSTEM_CONFIG_UNAVAILABLE ||
+          error.code === (shaka as any).util.Error.Code.LICENSE_REQUEST_FAILED
         ) {
           if (!fallbackApplied && drmConfig?.clearKeys) {
             fallbackApplied = true;
@@ -207,7 +207,7 @@ useEffect(() => {
               await player.destroy();
               playerRef.current = null;
 
-              const newPlayer = new shaka.Player(video);
+              const newPlayer = new (shaka as any).Player(video);
               playerRef.current = newPlayer;
 
               newPlayer.configure({
@@ -223,10 +223,10 @@ useEffect(() => {
                 newPlayer
                   .getNetworkingEngine()
                   .registerRequestFilter(
-                    (requestType: number, request: shaka.extern.Request) => {
+                    (requestType: number, request: any) => {
                       if (
                         requestType ===
-                        shaka.net.NetworkingEngine.RequestType.LICENSE
+                        (shaka as any).net.NetworkingEngine.RequestType.LICENSE
                       )
                         return;
 
@@ -250,8 +250,8 @@ useEffect(() => {
               const qualities = Array.from(
                 new Map(
                   tracks
-                    .filter((t) => t.height)
-                    .map((t) => [
+                    .filter((t: any) => t.height)
+                    .map((t: any) => [
                       t.height,
                       {
                         id: t.id,
@@ -263,8 +263,8 @@ useEffect(() => {
                 ).values()
               );
 
-              qualities.sort((a, b) => a.height - b.height);
-              setAvailableQualities(qualities);
+              qualities.sort((a: any, b: any) => a.height - b.height);
+              setAvailableQualities(qualities as Quality[]);
             } catch (retryError) {
               console.error("ClearKey fallback failed:", retryError);
             }
@@ -287,9 +287,9 @@ useEffect(() => {
         player
           .getNetworkingEngine()
           .registerRequestFilter(
-            (requestType: number, request: shaka.extern.Request) => {
+            (requestType: number, request: any) => {
               if (
-                requestType === shaka.net.NetworkingEngine.RequestType.LICENSE
+                requestType === (shaka as any).net.NetworkingEngine.RequestType.LICENSE
               )
                 return;
               if (request.uris) {
@@ -319,8 +319,8 @@ useEffect(() => {
           const qualities = Array.from(
             new Map(
               tracks
-                .filter((t) => t.height)
-                .map((t) => [
+                .filter((t: any) => t.height)
+                .map((t: any) => [
                   t.height,
                   {
                     id: t.id,
@@ -332,10 +332,10 @@ useEffect(() => {
             ).values()
           );
 
-          qualities.sort((a, b) => a.height - b.height);
-          setAvailableQualities(qualities);
+          qualities.sort((a: any, b: any) => a.height - b.height);
+          setAvailableQualities(qualities as Quality[]);
         })
-        .catch((err) => {
+        .catch((err: any) => {
           console.error("Error loading video:", err);
         });
     }, 50); // Delay to avoid MediaSource init errors
@@ -500,7 +500,7 @@ useEffect(() => {
     } else {
       const tracks = player.getVariantTracks();
       const selectedTrack = tracks.find(
-        (track: shaka.extern.VariantTrack) => track.id === target
+        (track: any) => track.id === target
       );
 
       if (selectedTrack) {

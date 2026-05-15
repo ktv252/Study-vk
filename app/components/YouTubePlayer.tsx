@@ -128,7 +128,7 @@ useEffect(() => {
       const qualities = playerRef.current.getAvailableQualityLevels?.() || [];
       if (qualities.length > 0) {
         setAvailableQualities(
-          qualities.map((q) => ({
+          qualities.map((q: any) => ({
             id: q,
             label: q.toUpperCase(),
           }))
@@ -171,7 +171,7 @@ useEffect(() => {
       const qualities = event.target.getAvailableQualityLevels();
       if (qualities.length > 0) {
         setAvailableQualities(
-          qualities.map((q) => ({
+          qualities.map((q: any) => ({
             id: q,
             label: q.toUpperCase(),
           }))
